@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AMG Academy | آفاق</title>
+    <meta name="description" content="آفاق منصة تعليمية عربية تساعدك تكتشف المسار المناسب لك باختبار قصير وتبدأ التعلم في اللغات والبرمجة والتسويق والتصميم والبيانات والذكاء الاصطناعي.">
+    
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    
+    <header class="header">
+
+        <div class="logo">
+            آفاق
+        </div>
+
+        <nav class="navbar">
+            <a href="#" class="active">الرئيسية</a>
+            <a href="#learning">الكورسات</a>
+<a href="#resources">الموارد المجانية</a>
+            
+            <a href="#" data-dialog="dlg-about">من نحن</a>
+        </nav>
+</header>
+
+<section class="hero">
+  <img class="hero-img" src="hero.jpg" alt="">
+  <div class="hero-content">
+    <h1>مرحباً بكم في آفاق</h1>
+    <h2>حلمك مش بعيد ..<br>خطوتك الأولى تبدأ من هنا.</h2>
+    <p>منصة تؤهلك من الصفر بمسار<br>احترافي، عملي وواضح.</p>
+    <a href="#quiz-section" class="hero-button">ابدأ التعلم ←</a>
+  </div>
+</section>
+
+    
+    <section class="quiz-section" id="quiz-section">
+        <div class="quiz-card" id="quiz">
+            <h2>اكتشف مسارك</h2>
+            <p class="quiz-subtitle">مش عارف تبدأ منين؟ 8 أسئلة صغيرة هيوضحولك طريقك.</p>
+            <input type="text" id="userName" placeholder="اكتب اسمك">
+            <div id="quiz-box">
+                <div class="quiz-progress"><span id="quiz-bar"></span></div>
+                <p class="quiz-count" id="quiz-count"></p>
+                <h3 class="quiz-question" id="quiz-question"></h3>
+                <div class="quiz-options" id="quiz-options"></div>
+                <div class="quiz-nav">
+                    <button type="button" class="quiz-btn ghost" id="quiz-prev">السابق</button>
+                    <button type="button" class="quiz-btn" id="quiz-next" disabled>التالي</button>
+                </div>
+            </div>
+
+            <div id="quiz-result" class="quiz-result" hidden>
+                <p class="quiz-result-label">المسار الأنسب ليك هو</p>
+                <h3 id="result-title"></h3>
+                <p id="result-text"></p>
+                <div class="quiz-nav">
+                    <a href="#learning" class="quiz-btn" id="result-link">ابدأ التعلم</a>
+                    <button type="button" class="quiz-btn ghost" id="quiz-restart">أعد الاختبار</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <section class="learning" id="learning">
+
+        <h2>التعلم وتطوير المهارات</h2>
+
+        <div class="title-line"></div>
+
+        <div class="cards">
+
+            
+            <div class="card">
+                <div class="icon purple"><img src="icon-paths.png" alt="مسارات تعليمية" data-fallback="📖"></div>
+                <h3>مسارات تعليمية</h3>
+                <p>
+                    اكتشف مسارك المناسب
+                    <br>
+                    لمستقبلك.
+                </p>
+            </div>
+
+                       <div class="card" id="languages">
+                <div class="icon green"><img src="icon-languages.png" alt="اللغات" data-fallback="🌎"></div>
+            <h3>اللغات</h3>
+                <p>
+                    طور لغتك وكن أقرب
+                    <br>
+                    لفرص أفضل.
+                </p>
+
+                <div class="lang-grid">
+
+                    <button type="button" class="lang-item" data-dialog="dlg-english">اللغة الإنجليزية🇬🇧</button>
+
+                    <button type="button" class="lang-item" data-dialog="dlg-german">اللغة الألمانية🇩🇪</button>
+
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="card" id="card-programming">
+                <div class="icon blue"><img src="icon-programming.png" alt="برمجة" data-fallback="💻"></div>
+                <h3>برمجة</h3>
+                <p>
+                    تعلم أساسيات البرمجة
+                    <br>
+                    واصنع مشروعك الخاص.
+                </p>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="card" id="card-marketing">
+                <div class="icon pink"><img src="icon-marketing.png" alt="ماركتنج" data-fallback="📣"></div>
+                <h3>ماركتنج</h3>
+                <p>
+                    اكتسب مهارات التسويق الرقمي
+                    <br>
+                    وابني علامتك الخاصة.
+                </p>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="card" id="card-design">
+                <div class="icon orange"><img src="icon-design.png" alt="تصميم" data-fallback="🎨"></div>
+                <h3>تصميم</h3>
+                <p>
+                    تعلم أساسيات التصميم
+                    <br>
+                    وحوّل أفكارك إلى أعمال جذابة.
+                </p>
+            </div>
+
+            <!-- Card 6 -->
+            <div class="card" id="card-data">
+                <div class="icon teal"><img src="icon-data.png" alt="البيانات والذكاء الاصطناعي" data-fallback="📊"></div>
+                <h3>البيانات والذكاء الاصطناعي</h3>
+                <p>
+                    ابدأ رحلتك مع البيانات
+                    <br>
+                    وتعلم كيف تستفيد من الذكاء الاصطناعي.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+    
+    <section class="learning" id="resources">
+
+        <h2>مصادر تعليمية</h2>
+
+        <div class="title-line"></div>
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="icon blue"><img src="icon-platforms.png" alt="منصات للتدريب العملي للبرمجة" data-fallback="💻"></div>
+                <h3>منصات للتدريب العملي للبرمجة</h3>
+            </div>
+
+            <div class="card">
+                <div class="icon pink"><img src="icon-community.png" alt="مجتمعات ومنتديات" data-fallback="💬"></div>
+                <h3>مجتمعات ومنتديات للنقاش وحل المشاكل</h3>
+            </div>
+
+            <div class="card">
+                <div class="icon purple"><img src="icon-podcast.png" alt="بودكاست" data-fallback="🎧"></div>
+                <h3>بودكاست </h3>
+            </div>
+
+        </div>
+
+    </section>
+    <dialog class="lang-dialog about-dialog" id="dlg-about">
+        <div class="dialog-head">
+            <h3>من نحن</h3>
+            <button type="button" class="dialog-close" aria-label="إغلاق">✕</button>
+        </div>
+        <div class="dialog-body">
+            <p>
+                آفاق هي مساحة صُممت لكل شخص يبحث عن فرصة ليتعلم، يتطور، ويصنع لنفسه طريقًا أفضل. نحن نؤمن أن لكل إنسان قدرات وأفكارًا تستحق أن تُكتشف، وأن الوصول إلى المستقبل الذي نريده يبدأ بخطوة واحدة صحيحة. لذلك نهدف من خلال آفاق إلى تقديم محتوى وفرص ومعلومات تساعد الطلاب والشباب على اكتشاف مجالات جديدة، وتطوير مهاراتهم، واتخاذ خطوات أكثر وضوحًا نحو أهدافهم. لا نريد أن تكون آفاق مجرد موقع تتصفحه ثم تغادره، بل نريدها أن تكون نقطة بداية تساعدك على اكتشاف ما يناسبك، وتوسيع معرفتك، وتحويل أفكارك وطموحاتك إلى خطوات حقيقية. آفاق... لأن مستقبلك أكبر من أن تتركه للصدفة.
+            </p>
+        </div>
+    </dialog>
+
+
+    <dialog class="lang-dialog" id="dlg-english">
+        <div class="dialog-head">
+            <h3>كورسات اللغة الانجليزية</h3>
+            <button type="button" class="dialog-close" aria-label="إغلاق">✕</button>
+        </div>
+        <div class="dialog-body">
+
+            <article class="course">
+                <h4>كورس اللغة الانجليزية_AUC</h4>
+                <ul class="course-item">
+                    <li>الجهة: الجامعة الأمريكية بالقاهرة</li>
+                    <li>المستوى: تحديد المستوى باختبار</li>
+                    <li>المدة : من 4_6 اسابيع</li>
+                    <li>الانجاز : رقمي عند اتمام الكورس</li>
+                </ul>
+                <a class="btn-course" href="https://www.aucegypt.edu/academics/free-english-courses">ابدأ الكورس</a>
+            </article>
+
+            <article class="course">
+                <h4>كورس اللغة الانجليزية_British Council</h4>
+                <ul class="course-item">
+                    <li>الجهة:المجلس الثقافي البريطاني</li>
+                    <li>المستوى : من A1 إلى C1</li>
+                    <li>المدة : مفتوحة</li>
+                    <li>الانجاز : شهادة رقمية مجانية</li>
+                </ul>
+                <a class="btn-course" href="https://learnenglish.britishcouncil.org">ابدأ الكورس</a>
+            </article>
+
+            <article class="course">
+                <h4>-كورس اللغه الانجليزيه Understanding IELTS</h4>
+                <ul class="course-item">
+                    <li>الجهة:المجلس الثقافي البريطاني</li>
+                    <li>المستوى : B1 متوسط</li>
+                    <li>المدة : 6 أسابيع</li>
+                    <li>الانجاز : شهادة مجانية</li>
+                </ul>
+                <a class="btn-course" href="https://www.futurelearn.com/courses/understanding-ielts">ابدأ الكورس</a>
+            </article>
+
+            <article class="course">
+                <h4>English for Beginners - USA Learns</h4>
+                <ul class="course-item">
+                    <li>الجهة: الولايات المتحدة الأمريكية - مبادرة USA Learns</li>
+                    <li>المستوى: مبتدئ</li>
+                    <li>المدة : 20 ساعة</li>
+                    <li>الانجاز : شهادة اتمام مجانية 100%</li>
+                </ul>
+                <a class="btn-course" href="https://www.usalearns.org">ابدأ الكورس</a>
+            </article>
+
+            <article class="course">
+                <h4>كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing</h4>
+                <ul class="course-item">
+                    <li>الجهة: Harvard University</li>
+                    <li>المستوى: مبتدئ - كتابة ومحادثة</li>
+                    <li>المدة: 8 أسابيع</li>
+                    <li> مجاني 100% - Audit</li>
+                </ul>
+                <a class="btn-course" href="https://pll.harvard.edu/course/rhetoric-art-persuasive-writing-and-public-speaking"> ابدأ الكورس</a>
+            </article>
+
+        </div>
+    </dialog>
+
+     <dialog class="lang-dialog" id="dlg-german">
+        <div class="dialog-head">
+            <h3>اللغة الألمانية</h3>
+            <button type="button" class="dialog-close" aria-label="إغلاق">✕</button>
+            
+        </div>
+        <div class="dialog-body">
+
+            <article class="course">
+                <h4>دورة اللغة الألمانية </h4>
+                <ul class="course-item">
+                    <li>الجهة : Deutsche Welle</li>
+                    <li>المدة : 8 اسابيع</li>
+                    <li>المستوى:A1</li>
+                </ul>
+                <a class="btn-course" href="https://learngerman.dw.com/en/nicos-weg/c-36519789" target="_blank">ابدأ الكورس</a>
+            </article>
+
+        </div>
+    </dialog>
+
+
+
+    <script src="index.js"></script>
+
+<footer class="site-footer">
+
+  <p class="footer-title">🚀 آفاق</p>
+  <p class="footer-sub">دليلك لاكتشاف مسارك المهني</p>
+
+  <div class="footer-row footer-row-first">
+    <a href="https://mail.google.com/mail/?view=cm&to=ayamahmoud.gruop@gmail.com" target="_blank" class="footer-link">تواصل معنا</a>
+    <a href="https://www.instagram.com/aya__mahmoud188?stkn=NDFoNGhpejRldm9x" target="_blank" class="footer-insta" aria-label="انستجرام">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="6"></rect>
+        <circle cx="12" cy="12" r="5"></circle>
+        <circle cx="17.5" cy="6.5" r="1.2" fill="white" stroke="none"></circle>
+      </svg>
+    </a>
+  </div>
+
+  <div class="footer-row">
+    <a href="#quiz" class="footer-cta footer-cta-quiz">جرب الاختبار</a>
+    <a href="https://wa.me/201105371577?text=السلام%20عليكم%20آية%20حابب%20اطلب%20موقع%20🚀%0Aنوع%20الموقع:%0Aالميزانية:" target="_blank" class="footer-cta footer-cta-wa">اطلب موقع 🚀</a>
+  </div>
+
+  <p class="footer-note">
+    AMG | Aya Mahmoud Group Digital Projects • Creative Work •<br>
+    Ideas Building something new, one project at a time. © 2026<br>
+    جميع الحقوق محفوظة لـ AMG
+  </p>
+
+</footer>
+</body>
+
+</html>
