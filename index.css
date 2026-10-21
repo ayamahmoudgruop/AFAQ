@@ -1072,3 +1072,55 @@ button.lang-item:hover { border-color: var(--accent); background: #faf8fd; }
 @media (max-width: 720px) {
   .card .icon img { max-height: 130px; }
 }
+
+
+/* صندوق الكود */
+.codebox-section { max-width: 720px; margin: 40px auto; padding: 0 16px; text-align: center; }
+.codebox-section h2 { color: #3b2a6b; }
+.codebox-hint { color: #3d3556; margin-top: 4px; }
+.codebox-input {
+  width: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 12px;
+  border: 1px solid #d8d2e3;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #3d3556;
+  direction: ltr;
+  text-align: left;
+}
+.codebox-actions { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
+.codebox-preview {
+  width: 100%;
+  height: 240px;
+  border: 1px solid #d8d2e3;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+/* الخطة وقريب من اهتمامك في النتيجة */
+.quiz-plan { margin: 12px 0; color: #3d3556; line-height: 1.8; }
+.quiz-alt { margin: 12px 0; }
+.quiz-alt p { margin: 0; color: #3d3556; }
+.quiz-alt h4 { margin: 4px 0 0; color: #3b2a6b; font-weight: 800; }
+
+
+/* تقدم الكورسات */
+.tree-course.is-done { background: #ede7f8; border-color: #3b2a6b; }
+.tree-node.is-done::before { background: #3b2a6b; }
+.tree-next {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 0.75rem;
+  background: #3b2a6b;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.track-progress { margin-bottom: 14px; color: #3d3556; text-align: center; }
+.track-progress p { margin: 0 0 6px; }
+.track-bar { height: 8px; background: #ece7f6; border-radius: 999px; overflow: hidden; }
+.track-bar span { display: block; height: 100%; background: #a58bdc; }

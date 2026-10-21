@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
+import CodeBox from "./CodeBox.jsx";
 import { ABOUT_TEXT, tracks, languages } from "./data.js";
 
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
@@ -56,10 +57,12 @@ function Modal({ open, onClose, title, className = "", children }) {
 }
 
 /* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
-function CourseTree({ courses, onPick }) {
+function CourseTree({ courses, onPick, done }) {
   if (!courses || courses.length === 0) {
     return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
   }
+  const ordered = LEVELS.flatMap((level) => courses.filter((c) => c.level === level));
+  const next = ordered.find((c) => !done.includes(c.title));
   return (
     <div className="tree">
       {LEVELS.map((level) => {
@@ -68,14 +71,34 @@ function CourseTree({ courses, onPick }) {
         return (
           <div className="tree-level" key={level}>
             <div className="tree-node tree-level-name">{level}</div>
-            {list.map((c) => (
-              <div className="tree-node" key={c.title}>
-                <button type="button" className="tree-course" onClick={() => onPick(c)}>{c.title}</button>
-              </div>
-            ))}
+            {list.map((c) => {
+              const isDone = done.includes(c.title);
+              return (
+                <div className={"tree-node" + (isDone ? " is-done" : "")} key={c.title}>
+                  <button type="button" className={"tree-course" + (isDone ? " is-done" : "")} onClick={() => onPick(c)}>
+                    {isDone ? "✓ " : ""}{c.title}
+                    {next && next.title === c.title && <span className="tree-next">التالي</span>}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* تقدم المسار: عدد الكورسات اللي اتعملت */
+function TrackProgress({ courses, done }) {
+  if (!courses || courses.length === 0) return null;
+  const total = courses.length;
+  const finished = courses.filter((c) => done.includes(c.title)).length;
+  const pct = Math.round((finished / total) * 100);
+  return (
+    <div className="track-progress">
+      <p>خلصتي {finished} من {total} كورسات</p>
+      <div className="track-bar"><span style={{ width: pct + "%" }} /></div>
     </div>
   );
 }
@@ -84,6 +107,21 @@ export default function App() {
   const [dialog, setDialog] = useState(null); // "about" | "english" | "german" | null
   const [course, setCourse] = useState(null);
   const [courseBack, setCourseBack] = useState(null);
+  const [done, setDone] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("afaq-done") || "[]");
+    } catch (e) {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("afaq-done", JSON.stringify(done));
+    } catch (e) {}
+  }, [done]);
+  function toggleDone(title) {
+    setDone((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
+  }
   function pick(c) {
     setCourse(c);
     setCourseBack(dialog);
@@ -114,6 +152,8 @@ export default function App() {
       </section>
 
       <Quiz />
+
+      <CodeBox />
 
       <section className="learning" id="learning">
         <h2>التعلم وتطوير المهارات</h2>
@@ -190,7 +230,8 @@ export default function App() {
 
       {languages.map((l) => (
         <Modal key={l.key} open={dialog === l.key} onClose={close} title={l.title}>
-          <CourseTree courses={tracks[l.key]} onPick={pick} />
+          <TrackProgress courses={tracks[l.key]} done={done} />
+          <CourseTree courses={tracks[l.key]} onPick={pick} done={done} />
         </Modal>
       ))}
 
@@ -205,6 +246,9 @@ export default function App() {
                 <p>{course.exercise}</p>
               </>
             )}
+            <button type="button" className={"quiz-btn" + (done.includes(course.title) ? " ghost" : "")} onClick={() => toggleDone(course.title)}>
+              {done.includes(course.title) ? "✓ خلصته (اضغطي للتراجع)" : "علّمي كمكتمل"}
+            </button>
             <a className="btn-course" href={course.href} target="_blank" rel="noreferrer">افتح الكورس</a>
             <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
           </div>
@@ -213,7 +257,8 @@ export default function App() {
 
       {Object.keys(TRACK_TITLES).map((k) => (
         <Modal key={k} open={dialog === k} onClose={close} title={"مسار " + TRACK_TITLES[k]}>
-          <CourseTree courses={tracks[k]} onPick={pick} />
+          <TrackProgress courses={tracks[k]} done={done} />
+          <CourseTree courses={tracks[k]} onPick={pick} done={done} />
         </Modal>
       ))}
 
