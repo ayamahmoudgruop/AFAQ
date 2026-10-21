@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import CodeBox from "./CodeBox.jsx";
 import Forum from "./Forum.jsx";
-import { ABOUT_TEXT, tracks, languages } from "./data.js";
+import { ABOUT_TEXT, tracks, languages, resources } from "./data.js";
 
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
 const TRACK_TITLES = {
@@ -104,6 +104,80 @@ function TrackProgress({ courses, done }) {
   );
 }
 
+function readRoute() {
+  return window.location.hash.replace(/^#\/?/, "");
+}
+
+/* صفحة كاملة لكل مسار / للغات / للمنتدى */
+function PageView({ route, done, onPick }) {
+  const back = (
+    <a href="#" className="page-back" onClick={() => window.scrollTo(0, 0)}>
+      الرجوع للرئيسية
+    </a>
+  );
+
+  if (route === "forum") {
+    return (
+      <section className="page">
+        {back}
+        <h2>المنتدى</h2>
+        <CodeBox />
+        <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
+        <Forum />
+      </section>
+    );
+  }
+
+  if (route === "podcast" || route === "platforms") {
+    const items = resources[route] || [];
+    const pageTitle = route === "podcast" ? "بودكاست" : "منصات للتدريب العملي للبرمجة";
+    return (
+      <section className="page">
+        {back}
+        <h2>{pageTitle}</h2>
+        {items.length === 0 ? (
+          <p className="tree-empty">قريباً 🌱</p>
+        ) : (
+          <div className="resource-list">
+            {items.map((r) => (
+              <a key={r.title} className="resource-item" href={r.href} target="_blank" rel="noreferrer">
+                <strong>{r.title}</strong>
+                {r.desc && <span>{r.desc}</span>}
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (route === "languages") {
+    return (
+      <section className="page">
+        {back}
+        <h2>اللغات</h2>
+        <div className="lang-grid">
+          {languages.map((l) => (
+            <a key={l.key} href={"#/" + l.key} className="lang-item">{l.title}</a>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  const lang = languages.find((l) => l.key === route);
+  const title = lang ? lang.title : TRACK_TITLES[route];
+  if (!title) return null;
+  return (
+    <section className="page">
+      {back}
+      <h2>{title}</h2>
+      <TrackProgress courses={tracks[route]} done={done} />
+      <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
+    </section>
+  );
+}
+
 export default function App() {
   const [dialog, setDialog] = useState(null); // "about" | "english" | "german" | null
   const [course, setCourse] = useState(null);
@@ -122,6 +196,18 @@ export default function App() {
   }, [done]);
   function toggleDone(title) {
     setDone((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
+  }
+  const [route, setRoute] = useState(readRoute);
+  useEffect(() => {
+    const onHash = () => setRoute(readRoute());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const PAGE_ROUTES = ["forum", "languages", "podcast", "platforms", ...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
+  const isPage = PAGE_ROUTES.includes(route);
+  function go(r) {
+    window.location.hash = r ? "/" + r : "";
+    window.scrollTo(0, 0);
   }
   function pick(c) {
     setCourse(c);
@@ -142,6 +228,10 @@ export default function App() {
         </nav>
       </header>
 
+      {isPage && <PageView route={route} done={done} onPick={pick} />}
+
+      {!isPage && (
+        <>
       <section className="hero">
         <img className="hero-img" src="/hero.jpg" alt="" />
         <div className="hero-content">
@@ -165,31 +255,31 @@ export default function App() {
             <p>اكتشف مسارك المناسب<br />لمستقبلك.</p>
           </div>
 
-          <div className="card clickable" id="languages" onClick={() => setDialog("languages")}>
+          <div className="card clickable" id="languages" onClick={() => go("languages")}>
             <Icon color="green" src="/icon-languages.png" alt="اللغات" fallback="🌎" />
             <h3>اللغات</h3>
             <p>طور لغتك وكن أقرب<br />لفرص أفضل.</p>
           </div>
 
-          <div className="card clickable" id="card-programming" onClick={() => setDialog("programming")}>
+          <div className="card clickable" id="card-programming" onClick={() => go("programming")}>
             <Icon color="blue" src="/icon-programming.png" alt="برمجة" fallback="💻" />
             <h3>برمجة</h3>
             <p>تعلم أساسيات البرمجة<br />واصنع مشروعك الخاص.</p>
           </div>
 
-          <div className="card clickable" id="card-marketing" onClick={() => setDialog("marketing")}>
+          <div className="card clickable" id="card-marketing" onClick={() => go("marketing")}>
             <Icon color="pink" src="/icon-marketing.png" alt="ماركتنج" fallback="📣" />
             <h3>ماركتنج</h3>
             <p>اكتسب مهارات التسويق الرقمي<br />وابني علامتك الخاصة.</p>
           </div>
 
-          <div className="card clickable" id="card-design" onClick={() => setDialog("design")}>
+          <div className="card clickable" id="card-design" onClick={() => go("design")}>
             <Icon color="orange" src="/icon-design.png" alt="تصميم" fallback="🎨" />
             <h3>تصميم</h3>
             <p>تعلم أساسيات التصميم<br />وحوّل أفكارك إلى أعمال جذابة.</p>
           </div>
 
-          <div className="card clickable" id="card-data" onClick={() => setDialog("data")}>
+          <div className="card clickable" id="card-data" onClick={() => go("data")}>
             <Icon color="teal" src="/icon-data.png" alt="البيانات والذكاء الاصطناعي" fallback="📊" />
             <h3>البيانات والذكاء الاصطناعي</h3>
             <p>ابدأ رحلتك مع البيانات<br />وتعلم كيف تستفيد من الذكاء الاصطناعي.</p>
@@ -201,15 +291,15 @@ export default function App() {
         <h2>مصادر تعليمية</h2>
         <div className="title-line"></div>
         <div className="cards">
-          <div className="card">
+          <div className="card clickable" onClick={() => go("platforms")}>
             <Icon color="blue" src="/icon-platforms.png" alt="منصات للتدريب العملي للبرمجة" fallback="💻" />
             <h3>منصات للتدريب العملي للبرمجة</h3>
           </div>
-          <div className="card clickable" onClick={() => setDialog("forum")}>
+          <div className="card clickable" onClick={() => go("forum")}>
             <Icon color="pink" src="/icon-community.png" alt="مجتمعات ومنتديات" fallback="💬" />
             <h3>مجتمعات ومنتديات للنقاش وحل المشاكل</h3>
           </div>
-          <div className="card">
+          <div className="card clickable" onClick={() => go("podcast")}>
             <Icon color="purple" src="/icon-podcast.png" alt="بودكاست" fallback="🎧" />
             <h3>بودكاست </h3>
           </div>
@@ -219,21 +309,6 @@ export default function App() {
       <Modal open={dialog === "about"} onClose={close} title="من نحن" className="about-dialog">
         <p>{ABOUT_TEXT}</p>
       </Modal>
-
-      <Modal open={dialog === "languages"} onClose={close} title="اللغات">
-        <div className="lang-grid">
-          {languages.map((l) => (
-            <button key={l.key} type="button" className="lang-item" onClick={() => setDialog(l.key)}>{l.title}</button>
-          ))}
-        </div>
-      </Modal>
-
-      {languages.map((l) => (
-        <Modal key={l.key} open={dialog === l.key} onClose={close} title={l.title}>
-          <TrackProgress courses={tracks[l.key]} done={done} />
-          <CourseTree courses={tracks[l.key]} onPick={pick} done={done} />
-        </Modal>
-      ))}
 
       <Modal open={dialog === "course"} onClose={close} title={course ? course.title : ""}>
         {course && (
@@ -254,19 +329,6 @@ export default function App() {
           </div>
         )}
       </Modal>
-
-      <Modal open={dialog === "forum"} onClose={close} title="المنتدى">
-        <CodeBox />
-        <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
-        <Forum />
-      </Modal>
-
-      {Object.keys(TRACK_TITLES).map((k) => (
-        <Modal key={k} open={dialog === k} onClose={close} title={"مسار " + TRACK_TITLES[k]}>
-          <TrackProgress courses={tracks[k]} done={done} />
-          <CourseTree courses={tracks[k]} onPick={pick} done={done} />
-        </Modal>
-      ))}
 
       <footer className="site-footer">
         <p className="footer-title">🚀 آفاق</p>
@@ -294,6 +356,8 @@ export default function App() {
           جميع الحقوق محفوظة لـ AMG
         </p>
       </footer>
+        </>
+      )}
     </>
   );
 }

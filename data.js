@@ -126,3 +126,14 @@ export const tracks = {
   design: [],
   data: [],
 };
+
+// المصادر: منصات التدريب العملي والبودكاست
+// كل عنصر: title و href و desc (اختياري)
+export const resources = {
+  platforms: [
+    { title: "freeCodeCamp", href: "https://www.freecodecamp.org", desc: "منصة مجانية لتعلم HTML وCSS وJavaScript بتمارين عملية، وفيها شهادات مجانية." },
+    { title: "Frontend Mentor", href: "https://www.frontendmentor.io", desc: "تحديات تصميم واقعية عشان تطبق مهاراتك في HTML وCSS وJavaScript." },
+    { title: "Codewars", href: "https://www.codewars.com", desc: "مسائل برمجة قصيرة بتتحل بأكتر من لغة، مناسبة لتدريب التفكير المنطقي." },
+  ],
+  podcast: [],
+};
