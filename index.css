@@ -956,3 +956,81 @@ button.lang-item:hover { border-color: var(--accent); background: #faf8fd; }
 @media (max-width: 720px) {
   .card .icon { height: 170px; }
 }
+
+
+/* بانر كارت المسارات التعليمية: خط أبيض على خلفية بنفسجي غامق */
+.paths-banner {
+  width: 100%;
+  height: 150px;
+  margin: 0 0 14px;
+  border-radius: 14px;
+  background: #3b2a6b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cairo", sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 0 12px;
+}
+
+@media (max-width: 720px) {
+  .paths-banner { height: 170px; }
+}
+
+
+/* كروت المسارات قابلة للضغط */
+.card.clickable { cursor: pointer; }
+
+/* شجرة الكورسات */
+.tree { position: relative; padding: 4px 0; }
+.tree::before {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #a58bdc;
+}
+.tree-node {
+  position: relative;
+  padding-right: 28px;
+  margin-bottom: 10px;
+}
+.tree-node::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 10px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #a58bdc;
+  border: 2px solid #ffffff;
+  box-sizing: border-box;
+}
+.tree-level-name {
+  font-weight: 800;
+  color: #3b2a6b;
+  padding-top: 6px;
+  margin-top: 14px;
+}
+.tree-course {
+  display: block;
+  background: #ffffff;
+  border: 1px solid #d8d2e3;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #3b2a6b;
+  text-decoration: none;
+  font-weight: 600;
+}
+.tree-course:hover { border-color: #a58bdc; }
+.tree-empty {
+  text-align: center;
+  color: #3d3556;
+  padding: 20px 8px;
+}
