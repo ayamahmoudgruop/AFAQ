@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
+import CodeBox from "./CodeBox.jsx";
 import Forum from "./Forum.jsx";
 import { ABOUT_TEXT, tracks, languages } from "./data.js";
 
@@ -153,7 +154,6 @@ export default function App() {
 
       <Quiz />
 
-      <CodeBox />
 
       <section className="learning" id="learning">
         <h2>التعلم وتطوير المهارات</h2>
@@ -247,7 +247,7 @@ export default function App() {
               </>
             )}
             <button type="button" className={"quiz-btn" + (done.includes(course.title) ? " ghost" : "")} onClick={() => toggleDone(course.title)}>
-              {done.includes(course.title) ? "✓ خلصته (اضغطي للتراجع)" : "علّمي كمكتمل"}
+              {done.includes(course.title) ? "✓ خلصته (اضغط للتراجع)" : "علّم كمكتمل"}
             </button>
             <a className="btn-course" href={course.href} target="_blank" rel="noreferrer">افتح الكورس</a>
             <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
@@ -256,6 +256,7 @@ export default function App() {
       </Modal>
 
       <Modal open={dialog === "forum"} onClose={close} title="المنتدى">
+        <CodeBox />
         <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
         <Forum />
       </Modal>
