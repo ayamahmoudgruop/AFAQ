@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { questions, results, TELEGRAM_LINK, NOTIFY_ENDPOINT } from "./data.js";
 
+// كل نتيجة وقسمها في الصفحة (لازم تطابق id الكارت في App.jsx)
+const SECTION_IDS = {
+  programming: "card-programming",
+  marketing: "card-marketing",
+  languages: "languages",
+  design: "card-design",
+  data: "card-data",
+};
+
 function notify(subject, fields) {
   const data = { _subject: subject, _template: "table", _captcha: "false", _honey: "", ...fields };
   fetch(NOTIFY_ENDPOINT, {
@@ -117,8 +126,13 @@ export default function Quiz() {
             <Feedback track={results[best][0]} />
             <div className="quiz-nav">
               <a href={TELEGRAM_LINK} target="_blank" rel="noreferrer" className="quiz-btn">
-                ادخل مجتمع {results[best][0]} 🚀
+                ادخل المجتمع 🚀
               </a>
+              <a href={"#" + SECTION_IDS[best]} className="quiz-btn ghost">
+                ابدأ التعلم
+              </a>
+            </div>
+            <div className="quiz-nav">
               <button type="button" className="quiz-btn ghost" onClick={restart}>أعد الاختبار</button>
             </div>
           </div>
