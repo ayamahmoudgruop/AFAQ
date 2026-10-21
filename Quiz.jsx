@@ -94,6 +94,10 @@ export default function Quiz() {
         <p className="quiz-subtitle">مش عارف تبدأ منين؟ 8 أسئلة صغيرة هيوضحولك طريقك.</p>
         <input type="text" id="userName" placeholder="اكتب اسمك" value={name} onChange={(e) => setName(e.target.value)} />
 
+        {best === null && current === 0 && !name.trim() && (
+          <p className="quiz-hint">اكتب اسمك لتبدأ الاختبار</p>
+        )}
+
         {best === null ? (
           <div id="quiz-box">
             <div className="quiz-progress">
@@ -113,7 +117,7 @@ export default function Quiz() {
               <button type="button" className="quiz-btn ghost" style={{ visibility: current === 0 ? "hidden" : "visible" }} onClick={() => setCurrent(current - 1)}>
                 السابق
               </button>
-              <button type="button" className="quiz-btn" disabled={!answers[current]} onClick={() => (isLast ? showResult() : setCurrent(current + 1))}>
+              <button type="button" className="quiz-btn" disabled={!answers[current] || (current === 0 && !name.trim())} onClick={() => (isLast ? showResult() : setCurrent(current + 1))}>
                 {isLast ? "اعرف مسارك" : "التالي"}
               </button>
             </div>
