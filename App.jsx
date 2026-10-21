@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
-import CodeBox from "./CodeBox.jsx";
 import Forum from "./Forum.jsx";
 import { ABOUT_TEXT, tracks, languages } from "./data.js";
 
