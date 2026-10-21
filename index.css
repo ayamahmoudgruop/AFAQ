@@ -1051,3 +1051,24 @@ button.lang-item:hover { border-color: var(--accent); background: #faf8fd; }
 @media (max-width: 720px) {
   .card .icon { height: auto; }
 }
+
+/* تصغير الصور داخل الكروت مع بقائها كاملة */
+.card .icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 14px;
+}
+.card .icon img {
+  max-width: 100%;
+  max-height: 150px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+@media (max-width: 720px) {
+  .card .icon img { max-height: 130px; }
+}
