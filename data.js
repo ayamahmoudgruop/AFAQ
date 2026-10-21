@@ -108,17 +108,18 @@ export const languages = [
 ];
 
 // كورسات كل مسار. كل كورس: level (مبتدئ / متوسط / متقدم)، title، href
-// مثال: { level: "مبتدئ", title: "اسم الكورس", href: "https://..." }
+// مثال: { level: "مبتدئ", title: "اسم الكورس", href: "https://...", desc: "كورس من جامعة هارفارد عن الكتابة الإقناعية والخطابة، مدته 8 أسابيع، ومتاح مجاناً بخيار Audit.", exercise: "تمرين واحد" }
+// desc و exercise اختياريين، ولو مش مكتوبين الكارت بيقول "قريباً"
 export const tracks = {
   english: [
-    { level: "مبتدئ", title: "كورس اللغة الانجليزية_AUC", href: "https://www.aucegypt.edu/academics/free-english-courses" },
-    { level: "مبتدئ", title: "كورس اللغة الانجليزية_British Council", href: "https://learnenglish.britishcouncil.org" },
-    { level: "متوسط", title: "-كورس اللغه الانجليزيه Understanding IELTS", href: "https://www.futurelearn.com/courses/understanding-ielts" },
-    { level: "مبتدئ", title: "English for Beginners - USA Learns", href: "https://www.usalearns.org" },
-    { level: "مبتدئ", title: "كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing", href: "https://pll.harvard.edu/course/rhetoric-art-persuasive-writing-and-public-speaking" },
+    { level: "مبتدئ", title: "كورس اللغة الانجليزية_AUC", href: "https://www.aucegypt.edu/academics/free-english-courses", desc: "كورس إنجليزي مجاني من الجامعة الأمريكية بالقاهرة. بتحددي مستواكي بالاختبار الأول، ومدته من 4 لـ 6 أسابيع، وبتاخدي شهادة رقمية في الآخر." },
+    { level: "مبتدئ", title: "كورس اللغة الانجليزية_British Council", href: "https://learnenglish.britishcouncil.org", desc: "من المجلس الثقافي البريطاني، بيغطي المستويات من A1 لـ C1. مدته مفتوحة، وفيه شهادة رقمية مجانية." },
+    { level: "متوسط", title: "-كورس اللغه الانجليزيه Understanding IELTS", href: "https://www.futurelearn.com/courses/understanding-ielts", desc: "كورس عن امتحان IELTS من FutureLearn، مناسب لمستوى B1، ومدته 6 أسابيع، وفيه شهادة مجانية." },
+    { level: "مبتدئ", title: "English for Beginners - USA Learns", href: "https://www.usalearns.org", desc: "كورس إنجليزي للمبتدئين من مبادرة USA Learns الأمريكية، حوالي 20 ساعة، وشهادة إتمام مجانية." },
+    { level: "مبتدئ", title: "كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing", href: "https://pll.harvard.edu/course/rhetoric-art-persuasive-writing-and-public-speaking", desc: "كورس من جامعة هارفارد عن الكتابة الإقناعية والخطابة، مدته 8 أسابيع، ومجاني بخيار Audit." },
   ],
   german: [
-    { level: "مبتدئ", title: "دورة اللغة الألمانية", href: "https://learngerman.dw.com/en/nicos-weg/c-36519789" },
+    { level: "مبتدئ", title: "دورة اللغة الألمانية", href: "https://learngerman.dw.com/en/nicos-weg/c-36519789", desc: "كورس ألماني من Deutsche Welle للمستوى A1، ومدته 8 أسابيع." },
   ],
   programming: [],
   marketing: [],

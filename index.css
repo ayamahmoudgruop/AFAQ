@@ -1034,3 +1034,11 @@ button.lang-item:hover { border-color: var(--accent); background: #faf8fd; }
   color: #3d3556;
   padding: 20px 8px;
 }
+
+
+/* كارت الكورس داخل الشجرة */
+.tree-course { width: 100%; text-align: right; font-family: inherit; font-size: 1rem; cursor: pointer; }
+.course-card { display: flex; flex-direction: column; gap: 10px; color: #3d3556; line-height: 1.8; }
+.course-card h4 { margin: 6px 0 0; color: #3b2a6b; font-weight: 800; }
+.course-level { font-weight: 800; color: #a58bdc; margin: 0; }
+.course-card .btn-course, .course-card .quiz-btn { text-align: center; }

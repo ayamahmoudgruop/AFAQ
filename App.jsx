@@ -56,7 +56,7 @@ function Modal({ open, onClose, title, className = "", children }) {
 }
 
 /* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
-function CourseTree({ courses }) {
+function CourseTree({ courses, onPick }) {
   if (!courses || courses.length === 0) {
     return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
   }
@@ -70,7 +70,7 @@ function CourseTree({ courses }) {
             <div className="tree-node tree-level-name">{level}</div>
             {list.map((c) => (
               <div className="tree-node" key={c.title}>
-                <a className="tree-course" href={c.href} target="_blank" rel="noreferrer">{c.title}</a>
+                <button type="button" className="tree-course" onClick={() => onPick(c)}>{c.title}</button>
               </div>
             ))}
           </div>
@@ -82,6 +82,13 @@ function CourseTree({ courses }) {
 
 export default function App() {
   const [dialog, setDialog] = useState(null); // "about" | "english" | "german" | null
+  const [course, setCourse] = useState(null);
+  const [courseBack, setCourseBack] = useState(null);
+  function pick(c) {
+    setCourse(c);
+    setCourseBack(dialog);
+    setDialog("course");
+  }
   const close = () => setDialog(null);
 
   return (
@@ -183,13 +190,30 @@ export default function App() {
 
       {languages.map((l) => (
         <Modal key={l.key} open={dialog === l.key} onClose={close} title={l.title}>
-          <CourseTree courses={tracks[l.key]} />
+          <CourseTree courses={tracks[l.key]} onPick={pick} />
         </Modal>
       ))}
 
+      <Modal open={dialog === "course"} onClose={close} title={course ? course.title : ""}>
+        {course && (
+          <div className="course-card">
+            <p className="course-level">{course.level}</p>
+            <p>{course.desc || "وصف الكورس هيتضاف قريباً."}</p>
+            {course.exercise && (
+              <>
+                <h4>تمرين</h4>
+                <p>{course.exercise}</p>
+              </>
+            )}
+            <a className="btn-course" href={course.href} target="_blank" rel="noreferrer">افتح الكورس</a>
+            <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
+          </div>
+        )}
+      </Modal>
+
       {Object.keys(TRACK_TITLES).map((k) => (
         <Modal key={k} open={dialog === k} onClose={close} title={"مسار " + TRACK_TITLES[k]}>
-          <CourseTree courses={tracks[k]} />
+          <CourseTree courses={tracks[k]} onPick={pick} />
         </Modal>
       ))}
 
