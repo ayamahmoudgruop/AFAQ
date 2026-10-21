@@ -1042,3 +1042,12 @@ button.lang-item:hover { border-color: var(--accent); background: #faf8fd; }
 .course-card h4 { margin: 6px 0 0; color: #3b2a6b; font-weight: 800; }
 .course-level { font-weight: 800; color: #a58bdc; margin: 0; }
 .course-card .btn-course, .course-card .quiz-btn { text-align: center; }
+
+/* الصورة تظهر كاملة بدون قص: الارتفاع حسب الصورة نفسها */
+.card .icon,
+.card .icon img,
+.card .icon img { height: auto; }
+.card .icon img { object-fit: contain; }
+@media (max-width: 720px) {
+  .card .icon { height: auto; }
+}
