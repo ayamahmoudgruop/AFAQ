@@ -1,6 +1,6 @@
 export const TELEGRAM_LINK = "https://t.me/+9X0OZJpuZsFjZDg0";
-export const NOTIFY_ENDPOINT =
-  "https://formsubmit.co/ajax/c947c76e870a310bd6002305343d5a8e";
+// Formspree: ابدلي xdeaqpdr برقم الفورم بتاعك من formspree.io
+export const NOTIFY_ENDPOINT = "https://formspree.io/f/xdeaqpdr";
 
 export const questions = [
         { q: "ما الذي يجذب انتباهك أكثر عند التعامل مع التكنولوجيا؟", a: [

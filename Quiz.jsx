@@ -11,7 +11,7 @@ const SECTION_IDS = {
 };
 
 function notify(subject, fields) {
-  const data = { _subject: subject, _template: "table", _captcha: "false", _honey: "", ...fields };
+  const data = { _subject: subject, ...fields };
   fetch(NOTIFY_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
