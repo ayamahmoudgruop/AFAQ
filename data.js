@@ -100,3 +100,28 @@ export const germanCourses = [
 
 export const ABOUT_TEXT =
   "آفاق هي مساحة صُممت لكل شخص يبحث عن فرصة ليتعلم، يتطور، ويصنع لنفسه طريقًا أفضل. نحن نؤمن أن لكل إنسان قدرات وأفكارًا تستحق أن تُكتشف، وأن الوصول إلى المستقبل الذي نريده يبدأ بخطوة واحدة صحيحة. لذلك نهدف من خلال آفاق إلى تقديم محتوى وفرص ومعلومات تساعد الطلاب والشباب على اكتشاف مجالات جديدة، وتطوير مهاراتهم، واتخاذ خطوات أكثر وضوحًا نحو أهدافهم. لا نريد أن تكون آفاق مجرد موقع تتصفحه ثم تغادره، بل نريدها أن تكون نقطة بداية تساعدك على اكتشاف ما يناسبك، وتوسيع معرفتك، وتحويل أفكارك وطموحاتك إلى خطوات حقيقية. آفاق... لأن مستقبلك أكبر من أن تتركه للصدفة.";
+
+// اللغات اللي بتظهر في كارت اللغات. كل لغة لازم يكون ليها مصفوفة في tracks بنفس الـ key
+export const languages = [
+  { key: "english", title: "اللغة الإنجليزية 🇬🇧" },
+  { key: "german", title: "اللغة الألمانية 🇩🇪" },
+];
+
+// كورسات كل مسار. كل كورس: level (مبتدئ / متوسط / متقدم)، title، href
+// مثال: { level: "مبتدئ", title: "اسم الكورس", href: "https://..." }
+export const tracks = {
+  english: [
+    { level: "مبتدئ", title: "كورس اللغة الانجليزية_AUC", href: "https://www.aucegypt.edu/academics/free-english-courses" },
+    { level: "مبتدئ", title: "كورس اللغة الانجليزية_British Council", href: "https://learnenglish.britishcouncil.org" },
+    { level: "متوسط", title: "-كورس اللغه الانجليزيه Understanding IELTS", href: "https://www.futurelearn.com/courses/understanding-ielts" },
+    { level: "مبتدئ", title: "English for Beginners - USA Learns", href: "https://www.usalearns.org" },
+    { level: "مبتدئ", title: "كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing", href: "https://pll.harvard.edu/course/rhetoric-art-persuasive-writing-and-public-speaking" },
+  ],
+  german: [
+    { level: "مبتدئ", title: "دورة اللغة الألمانية", href: "https://learngerman.dw.com/en/nicos-weg/c-36519789" },
+  ],
+  programming: [],
+  marketing: [],
+  design: [],
+  data: [],
+};

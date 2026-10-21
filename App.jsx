@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
-import { englishCourses, germanCourses, ABOUT_TEXT } from "./data.js";
+import { ABOUT_TEXT, tracks, languages } from "./data.js";
+
+const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
+const TRACK_TITLES = {
+  programming: "البرمجة",
+  marketing: "الماركتنج",
+  design: "التصميم",
+  data: "البيانات والذكاء الاصطناعي",
+};
 
 /* أيقونة: لو الصورة مش موجودة يظهر الإيموجي بدلها */
 function Icon({ color, src, alt, fallback }) {
@@ -35,7 +43,7 @@ function Modal({ open, onClose, title, className = "", children }) {
     <dialog
       ref={ref}
       className={"lang-dialog " + className}
-      onClose={onClose}
+      onCancel={(e) => { e.preventDefault(); onClose(); }}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
     >
       <div className="dialog-head">
@@ -47,16 +55,29 @@ function Modal({ open, onClose, title, className = "", children }) {
   );
 }
 
-function CourseList({ courses }) {
-  return courses.map((c) => (
-    <article className="course" key={c.title}>
-      <h4>{c.title}</h4>
-      <ul className="course-item">
-        {c.items.map((t) => <li key={t}>{t}</li>)}
-      </ul>
-      <a className="btn-course" href={c.href} {...(c.newTab ? { target: "_blank", rel: "noreferrer" } : {})}>ابدأ الكورس</a>
-    </article>
-  ));
+/* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
+function CourseTree({ courses }) {
+  if (!courses || courses.length === 0) {
+    return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
+  }
+  return (
+    <div className="tree">
+      {LEVELS.map((level) => {
+        const list = courses.filter((c) => c.level === level);
+        if (list.length === 0) return null;
+        return (
+          <div className="tree-level" key={level}>
+            <div className="tree-node tree-level-name">{level}</div>
+            {list.map((c) => (
+              <div className="tree-node" key={c.title}>
+                <a className="tree-course" href={c.href} target="_blank" rel="noreferrer">{c.title}</a>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function App() {
@@ -92,40 +113,36 @@ export default function App() {
         <div className="title-line"></div>
         <div className="cards">
           <div className="card">
-            <Icon color="purple" src="/icon-paths.png" alt="مسارات تعليمية" fallback="📖" />
+            <div className="paths-banner">المسارات التعليمية</div>
             <h3>مسارات تعليمية</h3>
             <p>اكتشف مسارك المناسب<br />لمستقبلك.</p>
           </div>
 
-          <div className="card" id="languages">
+          <div className="card clickable" id="languages" onClick={() => setDialog("languages")}>
             <Icon color="green" src="/icon-languages.png" alt="اللغات" fallback="🌎" />
             <h3>اللغات</h3>
             <p>طور لغتك وكن أقرب<br />لفرص أفضل.</p>
-            <div className="lang-grid">
-              <button type="button" className="lang-item" onClick={() => setDialog("english")}>اللغة الإنجليزية🇬🇧</button>
-              <button type="button" className="lang-item" onClick={() => setDialog("german")}>اللغة الألمانية🇩🇪</button>
-            </div>
           </div>
 
-          <div className="card" id="card-programming">
+          <div className="card clickable" id="card-programming" onClick={() => setDialog("programming")}>
             <Icon color="blue" src="/icon-programming.png" alt="برمجة" fallback="💻" />
             <h3>برمجة</h3>
             <p>تعلم أساسيات البرمجة<br />واصنع مشروعك الخاص.</p>
           </div>
 
-          <div className="card" id="card-marketing">
+          <div className="card clickable" id="card-marketing" onClick={() => setDialog("marketing")}>
             <Icon color="pink" src="/icon-marketing.png" alt="ماركتنج" fallback="📣" />
             <h3>ماركتنج</h3>
             <p>اكتسب مهارات التسويق الرقمي<br />وابني علامتك الخاصة.</p>
           </div>
 
-          <div className="card" id="card-design">
+          <div className="card clickable" id="card-design" onClick={() => setDialog("design")}>
             <Icon color="orange" src="/icon-design.png" alt="تصميم" fallback="🎨" />
             <h3>تصميم</h3>
             <p>تعلم أساسيات التصميم<br />وحوّل أفكارك إلى أعمال جذابة.</p>
           </div>
 
-          <div className="card" id="card-data">
+          <div className="card clickable" id="card-data" onClick={() => setDialog("data")}>
             <Icon color="teal" src="/icon-data.png" alt="البيانات والذكاء الاصطناعي" fallback="📊" />
             <h3>البيانات والذكاء الاصطناعي</h3>
             <p>ابدأ رحلتك مع البيانات<br />وتعلم كيف تستفيد من الذكاء الاصطناعي.</p>
@@ -156,13 +173,25 @@ export default function App() {
         <p>{ABOUT_TEXT}</p>
       </Modal>
 
-      <Modal open={dialog === "english"} onClose={close} title="كورسات اللغة الانجليزية">
-        <CourseList courses={englishCourses} />
+      <Modal open={dialog === "languages"} onClose={close} title="اللغات">
+        <div className="lang-grid">
+          {languages.map((l) => (
+            <button key={l.key} type="button" className="lang-item" onClick={() => setDialog(l.key)}>{l.title}</button>
+          ))}
+        </div>
       </Modal>
 
-      <Modal open={dialog === "german"} onClose={close} title="اللغة الألمانية">
-        <CourseList courses={germanCourses} />
-      </Modal>
+      {languages.map((l) => (
+        <Modal key={l.key} open={dialog === l.key} onClose={close} title={l.title}>
+          <CourseTree courses={tracks[l.key]} />
+        </Modal>
+      ))}
+
+      {Object.keys(TRACK_TITLES).map((k) => (
+        <Modal key={k} open={dialog === k} onClose={close} title={"مسار " + TRACK_TITLES[k]}>
+          <CourseTree courses={tracks[k]} />
+        </Modal>
+      ))}
 
       <footer className="site-footer">
         <p className="footer-title">🚀 آفاق</p>
