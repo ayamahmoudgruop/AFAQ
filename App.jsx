@@ -120,7 +120,7 @@ export default function App() {
         <div className="title-line"></div>
         <div className="cards">
           <div className="card">
-            <div className="paths-banner">المسارات التعليمية</div>
+            <Icon color="purple" src="/icon-paths.png" alt="مسارات تعليمية" fallback="📖" />
             <h3>مسارات تعليمية</h3>
             <p>اكتشف مسارك المناسب<br />لمستقبلك.</p>
           </div>
