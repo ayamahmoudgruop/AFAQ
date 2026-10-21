@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import CodeBox from "./CodeBox.jsx";
+import Forum from "./Forum.jsx";
 import { ABOUT_TEXT, tracks, languages } from "./data.js";
 
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
@@ -205,7 +206,7 @@ export default function App() {
             <Icon color="blue" src="/icon-platforms.png" alt="منصات للتدريب العملي للبرمجة" fallback="💻" />
             <h3>منصات للتدريب العملي للبرمجة</h3>
           </div>
-          <div className="card">
+          <div className="card clickable" onClick={() => setDialog("forum")}>
             <Icon color="pink" src="/icon-community.png" alt="مجتمعات ومنتديات" fallback="💬" />
             <h3>مجتمعات ومنتديات للنقاش وحل المشاكل</h3>
           </div>
@@ -253,6 +254,11 @@ export default function App() {
             <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
           </div>
         )}
+      </Modal>
+
+      <Modal open={dialog === "forum"} onClose={close} title="المنتدى">
+        <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
+        <Forum />
       </Modal>
 
       {Object.keys(TRACK_TITLES).map((k) => (

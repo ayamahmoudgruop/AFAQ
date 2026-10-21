@@ -1124,3 +1124,39 @@ button.lang-item:hover { border-color: var(--accent); background: #faf8fd; }
 .track-progress p { margin: 0 0 6px; }
 .track-bar { height: 8px; background: #ece7f6; border-radius: 999px; overflow: hidden; }
 .track-bar span { display: block; height: 100%; background: #a58bdc; }
+
+/* لما الصورة تكون موجودة، نشيل الخلفية الملونة اللي وراها عشان مايبانش شريط وردي على الجنبين */
+.card .icon:has(img) { background: transparent; }
+
+/* الصورة تاخد عرض الكارت تقريبًا (أصغر بشوية)، من غير قص وبدون حد للارتفاع */
+.card .icon img,
+.card .icon img[src] {
+  width: 88%;
+  max-width: 88%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+}
+@media (max-width: 720px) {
+  .card .icon img { width: 88%; max-width: 88%; height: auto; max-height: none; }
+}
+
+
+/* المنتدى */
+.forum-intro { color: #3d3556; margin: 0 0 12px; }
+.forum-form { display: flex; flex-direction: column; gap: 10px; }
+.forum-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d8d2e3;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #3d3556;
+  font-family: inherit;
+  font-size: 1rem;
+}
+textarea.forum-input { min-height: 90px; resize: vertical; }
+.forum-code { font-family: monospace; direction: ltr; text-align: left; min-height: 120px; font-size: 14px; }
+.forum-thanks { color: #3b2a6b; font-weight: 800; }
+.forum-error { color: #9b2c2c; margin: 0; }
