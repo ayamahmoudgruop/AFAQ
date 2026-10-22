@@ -238,7 +238,8 @@ function NewQuestion({ user, onDone, onCancel }) {
   return (
     <form className="forum-form" onSubmit={send}>
       <button type="button" className="page-back" onClick={onCancel}>رجوع للأسئلة</button>
-      <input className="forum-input" placeholder="عنوان السؤال" value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
+      <input className="forum-input" placeholder="مثال: ليه الصورة مش بتظهر على الموبايل؟" value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
+      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة، والتفاصيل تكتبيها في خانة الشرح.</p>
       <select className="forum-input" value={category} onChange={(e) => setCategory(e.target.value)}>
         {CATEGORIES.map((c) => (
           <option key={c} value={c}>{c}</option>
