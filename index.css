@@ -1266,3 +1266,7 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   font-size: 0.85rem;
   white-space: nowrap;
 }
+
+/* عناوين الصفحات أقرب لأعلى الشاشة */
+.page h2 { margin: 0 0 16px; }
+.page-back { margin-bottom: 4px; }

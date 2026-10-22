@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth, googleProvider } from "./firebase.js";
+import CodeBox from "./CodeBox.jsx";
 
 const MAX = { title: 120, body: 1500, code: 3000 };
 const COOLDOWN_MS = 30000;
@@ -51,7 +52,7 @@ function formatTime(ts) {
   return ts.toDate().toLocaleString("ar-EG");
 }
 
-
+// حالة المستخدم المسجل
 function useUser() {
   const [user, setUser] = useState(null);
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), []);
@@ -66,7 +67,7 @@ function AuthBar({ user }) {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
-      setErr("تعذّر التسجيل حاول مرة اخرى.");
+      setErr("تعذّر تسجيل الدخول. حاول مرة أخرى.");
     }
   }
 
@@ -74,7 +75,7 @@ function AuthBar({ user }) {
     return (
       <div className="forum-auth">
         <button type="button" className="quiz-btn" onClick={login}>سجّل دخول بجوجل</button>
-        <p className="forum-meta">التسجيل مطلوب لكى تنشر أو ترد أو تبلغ.</p>
+        <p className="forum-meta">لازم تسجّل دخول عشان تنشر أو ترد أو تبلّغ.</p>
         {err && <p className="forum-error">{err}</p>}
       </div>
     );
@@ -82,13 +83,13 @@ function AuthBar({ user }) {
 
   return (
     <div className="forum-auth">
-      <span>تم تسجيل الدخول باسم <strong>{user.displayName || "مستخدم"}</strong></span>
+      <span>أنت داخل باسم <strong>{user.displayName || "مستخدم"}</strong></span>
       <button type="button" className="forum-report" onClick={() => signOut(auth)}>تسجيل الخروج</button>
     </div>
   );
 }
 
- reports
+// زرار الإبلاغ: لازم تكون مسجل، والبلاغ بيتحفظ في reports
 function ReportButton({ user, questionId, replyId = "" }) {
   const key = questionId + ":" + replyId;
   const [done, setDone] = useState(getReported().includes(key));
@@ -107,8 +108,7 @@ function ReportButton({ user, questionId, replyId = "" }) {
       markReported(key);
       setDone(true);
     } catch (err) {
-    
-
+      // لو فشل، الزرار يفضل متاح
     } finally {
       setBusy(false);
     }
@@ -161,6 +161,8 @@ export default function Forum() {
         اكتب سؤال جديد
       </button>
 
+      {filter === "برمجة" && <CodeBox />}
+
       <div className="forum-chips">
         {["الكل", ...CATEGORIES].map((c) => (
           <button
@@ -174,8 +176,8 @@ export default function Forum() {
         ))}
       </div>
 
-      {loadError && <p className="forum-error">تعذّر تحميل الأسئلة، قم بتحديث الصفحة.</p>}
-      {!loadError && shown.length === 0 && <p className="tree-empty">لا توجد اسئلة  هنا، كن أول من يسأل.</p>}
+      {loadError && <p className="forum-error">تعذّر تحميل الأسئلة. حدّث الصفحة وحاول مرة أخرى.</p>}
+      {!loadError && shown.length === 0 && <p className="tree-empty">لا توجد أسئلة في هذا القسم حتى الآن.</p>}
 
       {shown.map((q) => (
         <button
@@ -212,7 +214,7 @@ function NewQuestion({ user, onDone, onCancel }) {
     e.preventDefault();
     if (!valid || busy) return;
     if (cooldownLeft() > 0) {
-      setMsg("يرجى الانتظار.");
+      setMsg("يمكنك النشر مرة أخرى بعد 30 ثانية.");
       return;
     }
     setBusy(true);
@@ -230,7 +232,7 @@ function NewQuestion({ user, onDone, onCancel }) {
       markPosted();
       onDone();
     } catch (err) {
-      setMsg("حدث خطأ حاول مرة اخرى.");
+      setMsg("حدث خطأ أثناء النشر. حاول مرة أخرى.");
     } finally {
       setBusy(false);
     }
@@ -239,8 +241,8 @@ function NewQuestion({ user, onDone, onCancel }) {
   return (
     <form className="forum-form" onSubmit={send}>
       <button type="button" className="page-back" onClick={onCancel}>رجوع للأسئلة</button>
-      <input className="forum-input" placeholder="مثال :"احتاج مساعدة  value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
-      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة، والتفاصيل في خانة الشرح.</p>
+      <input className="forum-input" placeholder="مثال: ليه الصورة مش بتظهر على الموبايل؟" value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
+      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة، والتفاصيل تكتبيها في خانة الشرح.</p>
       <select className="forum-input" value={category} onChange={(e) => setCategory(e.target.value)}>
         {CATEGORIES.map((c) => (
           <option key={c} value={c}>{c}</option>
@@ -271,7 +273,7 @@ function QuestionView({ user, question, onBack }) {
     e.preventDefault();
     if (!user || !body.trim() || body.length > MAX.body || busy) return;
     if (cooldownLeft() > 0) {
-      setMsg("يرجى الانتظار");
+      setMsg("يمكنك الرد مرة أخرى بعد 30 ثانية.");
       return;
     }
     setBusy(true);
@@ -286,7 +288,7 @@ function QuestionView({ user, question, onBack }) {
       markPosted();
       setBody("");
     } catch (err) {
-      setMsg(" حدث خطأ حاول مرة أخرى");
+      setMsg("حدث خطأ أثناء إرسال الرد. حاول مرة أخرى.");
     } finally {
       setBusy(false);
     }
@@ -326,11 +328,13 @@ function QuestionView({ user, question, onBack }) {
           <button type="submit" className="quiz-btn" disabled={busy || !body.trim()}>{busy ? "جاري الإرسال..." : "أرسل الرد"}</button>
         </form>
       ) : (
-        <p className="forum-meta"> قم بتسجيل الدخول لتتمكن من الرد.</p>
+        <p className="forum-meta">سجّل دخول لتكتب ردك.</p>
       )}
     </div>
   );
+}
 
+// صفحة بروفايل: الأسئلة اللي الشخص نشرها
 export function UserProfile({ uid }) {
   const [items, setItems] = useState([]);
 
@@ -349,7 +353,7 @@ export function UserProfile({ uid }) {
     <div className="forum-list">
       <h2>{name}</h2>
       <p className="forum-meta">عدد الأسئلة: {items.length}</p>
-      {items.length === 0 && <p className="tree-empty">لسه ما نشرش أسئلة.</p>}
+      {items.length === 0 && <p className="tree-empty">لا توجد أسئلة منشورة بعد.</p>}
       {items.map((q) => (
         <div key={q.id} className="forum-item">
           <span className="forum-tag">{q.category || "عام"}</span>
