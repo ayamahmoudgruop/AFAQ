@@ -1251,3 +1251,18 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 /* تسجيل الدخول */
 .forum-auth { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; color: #3d3556; }
 .forum-question a, .forum-reply a { color: #3b2a6b; font-weight: 700; }
+
+/* أقسام المنتدى: 4 فوق و3 تحت (7 أزرار: الكل + 6 تصنيفات) */
+.forum-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.forum-chip {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 8px 4px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}

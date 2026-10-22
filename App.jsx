@@ -130,7 +130,6 @@ function PageView({ route, done, onPick }) {
       <section className="page">
         {back}
         <h2>المنتدى</h2>
-        <CodeBox />
         <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
         <Forum />
       </section>
@@ -181,6 +180,7 @@ function PageView({ route, done, onPick }) {
     <section className="page">
       {back}
       <h2>{title}</h2>
+      {route === "programming" && <CodeBox />}
       <TrackProgress courses={tracks[route]} done={done} />
       <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
     </section>
