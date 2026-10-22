@@ -12,12 +12,12 @@ const TRACK_TITLES = {
   data: "البيانات والذكاء الاصطناعي",
 };
 
-/* أيقونة: لو الصورة مش موجودة يظهر الإيموجي بدلها */
+
 function Icon({ color, src, alt, fallback }) {
   const [failed, setFailed] = useState(false);
   const imgRef = useRef(null);
 
-  // لو الصورة فشلت قبل ما React يشتغل، نرجّع الإيموجي
+
   useEffect(() => {
     const img = imgRef.current;
     if (img && img.complete && img.naturalWidth === 0) setFailed(true);
@@ -57,10 +57,10 @@ function Modal({ open, onClose, title, className = "", children }) {
   );
 }
 
-/* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
+
 function CourseTree({ courses, onPick, done }) {
   if (!courses || courses.length === 0) {
-    return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
+    return <p className="tree-empty">قريباً 🌱 الكورسات سوف تضاف قريباً</p>;
   }
   const ordered = LEVELS.flatMap((level) => courses.filter((c) => c.level === level));
   const next = ordered.find((c) => !done.includes(c.title));
@@ -98,7 +98,7 @@ function TrackProgress({ courses, done }) {
   const pct = Math.round((finished / total) * 100);
   return (
     <div className="track-progress">
-      <p>خلصتي {finished} من {total} كورسات</p>
+      <p>انهيت {finished} من {total} كورسات</p>
       <div className="track-bar"><span style={{ width: pct + "%" }} /></div>
     </div>
   );
@@ -130,7 +130,7 @@ function PageView({ route, done, onPick }) {
       <section className="page">
         {back}
         <h2>المنتدى</h2>
-        <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
+        <p className="forum-intro">اكتب سؤالك وسوف يتم الرد.</p>
         <Forum />
       </section>
     );
@@ -331,9 +331,9 @@ export default function App() {
               </>
             )}
             <button type="button" className={"quiz-btn" + (done.includes(course.title) ? " ghost" : "")} onClick={() => toggleDone(course.title)}>
-              {done.includes(course.title) ? "✓ خلصته (اضغط للتراجع)" : "علّم كمكتمل"}
+              {done.includes(course.title) ? "✓ انهيته (اضغط للتراجع)" : "علّم كمكتمل"}
             </button>
-            <a className="btn-course" href={course.href} target="_blank" rel="noreferrer">افتح الكورس</a>
+            <a className="btn-course" href={course.href} target="_blank" rel="noreferrer">ابدأ الكورس</a>
             <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
           </div>
         )}
