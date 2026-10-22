@@ -51,7 +51,7 @@ function formatTime(ts) {
   return ts.toDate().toLocaleString("ar-EG");
 }
 
-// حالة المستخدم المسجل
+
 function useUser() {
   const [user, setUser] = useState(null);
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), []);
@@ -66,7 +66,7 @@ function AuthBar({ user }) {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
-      setErr("تعذّر تسجيل الدخول، جرّب تاني.");
+      setErr("تعذّر التسجيل حاول مرة اخرى.");
     }
   }
 
@@ -74,7 +74,7 @@ function AuthBar({ user }) {
     return (
       <div className="forum-auth">
         <button type="button" className="quiz-btn" onClick={login}>سجّل دخول بجوجل</button>
-        <p className="forum-meta">التسجيل مطلوب عشان تنشر أو ترد أو تبلغ.</p>
+        <p className="forum-meta">التسجيل مطلوب لكى تنشر أو ترد أو تبلغ.</p>
         {err && <p className="forum-error">{err}</p>}
       </div>
     );
@@ -82,13 +82,13 @@ function AuthBar({ user }) {
 
   return (
     <div className="forum-auth">
-      <span>أنت داخل باسم <strong>{user.displayName || "مستخدم"}</strong></span>
+      <span>تم تسجيل الدخول باسم <strong>{user.displayName || "مستخدم"}</strong></span>
       <button type="button" className="forum-report" onClick={() => signOut(auth)}>تسجيل الخروج</button>
     </div>
   );
 }
 
-// زرار الإبلاغ: لازم تكون مسجل، والبلاغ بيتحفظ في reports
+ reports
 function ReportButton({ user, questionId, replyId = "" }) {
   const key = questionId + ":" + replyId;
   const [done, setDone] = useState(getReported().includes(key));
@@ -107,7 +107,8 @@ function ReportButton({ user, questionId, replyId = "" }) {
       markReported(key);
       setDone(true);
     } catch (err) {
-      // لو فشل، الزرار يفضل متاح
+    
+
     } finally {
       setBusy(false);
     }
@@ -173,8 +174,8 @@ export default function Forum() {
         ))}
       </div>
 
-      {loadError && <p className="forum-error">تعذّر تحميل الأسئلة، جرّب تحدّث الصفحة.</p>}
-      {!loadError && shown.length === 0 && <p className="tree-empty">لسه مفيش أسئلة هنا، كن أول واحد يسأل.</p>}
+      {loadError && <p className="forum-error">تعذّر تحميل الأسئلة، قم بتحديث الصفحة.</p>}
+      {!loadError && shown.length === 0 && <p className="tree-empty">لا توجد اسئلة  هنا، كن أول من يسأل.</p>}
 
       {shown.map((q) => (
         <button
@@ -211,7 +212,7 @@ function NewQuestion({ user, onDone, onCancel }) {
     e.preventDefault();
     if (!valid || busy) return;
     if (cooldownLeft() > 0) {
-      setMsg("استنى شوية قبل ما تنشر تاني.");
+      setMsg("يرجى الانتظار.");
       return;
     }
     setBusy(true);
@@ -229,7 +230,7 @@ function NewQuestion({ user, onDone, onCancel }) {
       markPosted();
       onDone();
     } catch (err) {
-      setMsg("حصلت مشكلة في النشر، جرّب تاني.");
+      setMsg("حدث خطأ حاول مرة اخرى.");
     } finally {
       setBusy(false);
     }
@@ -238,8 +239,8 @@ function NewQuestion({ user, onDone, onCancel }) {
   return (
     <form className="forum-form" onSubmit={send}>
       <button type="button" className="page-back" onClick={onCancel}>رجوع للأسئلة</button>
-      <input className="forum-input" placeholder="مثال: ليه الصورة مش بتظهر على الموبايل؟" value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
-      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة، والتفاصيل تكتبيها في خانة الشرح.</p>
+      <input className="forum-input" placeholder="مثال :"احتاج مساعدة  value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
+      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة، والتفاصيل في خانة الشرح.</p>
       <select className="forum-input" value={category} onChange={(e) => setCategory(e.target.value)}>
         {CATEGORIES.map((c) => (
           <option key={c} value={c}>{c}</option>
@@ -270,7 +271,7 @@ function QuestionView({ user, question, onBack }) {
     e.preventDefault();
     if (!user || !body.trim() || body.length > MAX.body || busy) return;
     if (cooldownLeft() > 0) {
-      setMsg("استنى شوية قبل ما ترد تاني.");
+      setMsg("يرجى الانتظار");
       return;
     }
     setBusy(true);
@@ -285,7 +286,7 @@ function QuestionView({ user, question, onBack }) {
       markPosted();
       setBody("");
     } catch (err) {
-      setMsg("حصلت مشكلة في الرد، جرّب تاني.");
+      setMsg(" حدث خطأ حاول مرة أخرى");
     } finally {
       setBusy(false);
     }
@@ -325,13 +326,11 @@ function QuestionView({ user, question, onBack }) {
           <button type="submit" className="quiz-btn" disabled={busy || !body.trim()}>{busy ? "جاري الإرسال..." : "أرسل الرد"}</button>
         </form>
       ) : (
-        <p className="forum-meta">سجّل دخول عشان تكتب ردك.</p>
+        <p className="forum-meta"> قم بتسجيل الدخول لتتمكن من الرد.</p>
       )}
     </div>
   );
-}
 
-// صفحة بروفايل: الأسئلة اللي الشخص نشرها
 export function UserProfile({ uid }) {
   const [items, setItems] = useState([]);
 
