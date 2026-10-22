@@ -249,8 +249,8 @@ export default function Quiz({ user }) {
 
             {!user && (
               <div className="quiz-save">
-                <p>سجّل دخول عشان تحفظ خطتك وتلاقيها على أي جهاز.</p>
-                <button type="button" className="quiz-btn ghost" onClick={loginGoogle}>احفظ خطتك بحساب جوجل</button>
+                <p>احفظ مسارك بحسابك، وكمّل من حيث وقفت.</p>
+                <button type="button" className="quiz-btn ghost" onClick={loginGoogle}>سجّل دخول بجوجل</button>
               </div>
             )}
             <Feedback track={results[best][0]} />
