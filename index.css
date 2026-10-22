@@ -1270,3 +1270,7 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 /* عناوين الصفحات أقرب لأعلى الشاشة */
 .page h2 { margin: 0 0 16px; }
 .page-back { margin-bottom: 4px; }
+
+/* حفظ الخطة بالحساب */
+.quiz-save { margin: 14px 0; padding: 12px; border: 1px dashed #a58bdc; border-radius: 12px; text-align: center; color: #3d3556; }
+.quiz-save p { margin: 0 0 8px; }

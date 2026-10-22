@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { questions, results, TELEGRAM_LINK, NOTIFY_ENDPOINT } from "./data.js";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "./firebase.js";
+import { loadUserData, saveUserData } from "./sync.js";
 
 // كل نتيجة وقسمها في الصفحة (لازم تطابق id الكارت في App.jsx)
 const SECTION_IDS = {
-  programming: "card-programming",
-  marketing: "card-marketing",
+  programming: "programming",
+  marketing: "marketing",
   languages: "languages",
-  design: "card-design",
-  data: "card-data",
+  design: "design",
+  data: "data",
 };
 
 const TRACK_KEYS = ["programming", "marketing", "languages", "design", "data"];
@@ -30,6 +33,28 @@ const PLANS = {
 };
 
 const ALL_QUESTIONS = [...questions, TIME_QUESTION];
+
+const RESULT_KEY = "afaq-result";
+
+function loadSaved() {
+  try {
+    return JSON.parse(localStorage.getItem(RESULT_KEY) || "null");
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveResult(data) {
+  try {
+    localStorage.setItem(RESULT_KEY, JSON.stringify(data));
+  } catch (e) {}
+}
+
+function clearResult() {
+  try {
+    localStorage.removeItem(RESULT_KEY);
+  } catch (e) {}
+}
 
 function timeLabel(value) {
   const found = TIME_QUESTION.a.find(([k]) => k === value);
@@ -73,16 +98,40 @@ function Feedback({ track }) {
   );
 }
 
-export default function Quiz() {
-  const [name, setName] = useState("");
+export default function Quiz({ user }) {
+  const saved = loadSaved();
+  const [name, setName] = useState(saved?.name || "");
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState([]);
-  const [best, setBest] = useState(null);
-  const [second, setSecond] = useState(null);
-  const [time, setTime] = useState(null);
+  const [best, setBest] = useState(saved?.best ?? null);
+  const [second, setSecond] = useState(saved?.second ?? null);
+  const [time, setTime] = useState(saved?.time ?? null);
 
   const item = ALL_QUESTIONS[current];
   const isLast = current === ALL_QUESTIONS.length - 1;
+
+  // لو المستخدم مسجل ومفيش نتيجة على الجهاز، نجيب نتيجته من حسابه
+  useEffect(() => {
+    if (!user || best !== null) return;
+    loadUserData(user.uid)
+      .then((data) => {
+        const r = data?.result;
+        if (r && r.best) {
+          setName(r.name || "");
+          setBest(r.best);
+          setSecond(r.second ?? null);
+          setTime(r.time ?? null);
+          saveResult(r);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  async function loginGoogle() {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {}
+  }
 
   function choose(value) {
     const copy = [...answers];
@@ -114,6 +163,9 @@ export default function Quiz() {
     setBest(top);
     setSecond(alt);
     setTime(t);
+    const record = { name, best: top, second: alt, time: t };
+    saveResult(record);
+    if (user) saveUserData(user.uid, { result: record }).catch(() => {});
 
     notify("🔥 نتيجة كويز جديدة - " + results[top][0], {
       "الاسم": name,
@@ -128,6 +180,7 @@ export default function Quiz() {
   }
 
   function restart() {
+    clearResult();
     setCurrent(0);
     setAnswers([]);
     setBest(null);
@@ -194,12 +247,18 @@ export default function Quiz() {
               </div>
             )}
 
+            {!user && (
+              <div className="quiz-save">
+                <p>سجّل دخول عشان تحفظ خطتك وتلاقيها على أي جهاز.</p>
+                <button type="button" className="quiz-btn ghost" onClick={loginGoogle}>احفظ خطتك بحساب جوجل</button>
+              </div>
+            )}
             <Feedback track={results[best][0]} />
             <div className="quiz-nav">
               <a href={TELEGRAM_LINK} target="_blank" rel="noreferrer" className="quiz-btn">
                 ادخل المجتمع 🚀
               </a>
-              <a href={"#" + SECTION_IDS[best]} className="quiz-btn ghost">
+              <a href={"#/" + SECTION_IDS[best]} className="quiz-btn ghost">
                 ابدأ التعلم
               </a>
             </div>

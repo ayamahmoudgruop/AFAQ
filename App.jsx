@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import Forum, { UserProfile } from "./Forum.jsx";
 import { ABOUT_TEXT, tracks, languages, resources } from "./data.js";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { loadUserData, saveUserData } from "./sync.js";
 
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
 const TRACK_TITLES = {
@@ -201,6 +204,25 @@ export default function App() {
       localStorage.setItem("afaq-done", JSON.stringify(done));
     } catch (e) {}
   }, [done]);
+  const [user, setUser] = useState(null);
+  const [doneReady, setDoneReady] = useState(false);
+  useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), []);
+  // لما يسجل دخول: ندمج الكورسات المكتملة اللي على الجهاز مع اللي محفوظة على حسابه
+  useEffect(() => {
+    if (!user) return;
+    loadUserData(user.uid)
+      .then((data) => {
+        const remote = data?.done || [];
+        setDone((prev) => Array.from(new Set([...prev, ...remote])));
+      })
+      .catch(() => {})
+      .finally(() => setDoneReady(true));
+  }, [user]);
+  // أي تغيير في الكورسات المكتملة يتحفظ على الحساب
+  useEffect(() => {
+    if (!user || !doneReady) return;
+    saveUserData(user.uid, { done }).catch(() => {});
+  }, [done, user, doneReady]);
   function toggleDone(title) {
     setDone((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
   }
@@ -249,7 +271,7 @@ export default function App() {
         </div>
       </section>
 
-      <Quiz />
+      <Quiz user={user} />
 
 
       <section className="learning" id="learning">
