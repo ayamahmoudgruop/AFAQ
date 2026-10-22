@@ -161,8 +161,6 @@ export default function Forum() {
         اكتب سؤال جديد
       </button>
 
-      {filter === "برمجة" && <CodeBox />}
-
       <div className="forum-chips">
         {["الكل", ...CATEGORIES].map((c) => (
           <button
@@ -226,7 +224,7 @@ function NewQuestion({ user, onDone, onCancel }) {
         title: title.trim(),
         category,
         body: body.trim(),
-        code: code,
+        code: category === "برمجة" ? code : "",
         createdAt: serverTimestamp(),
       });
       markPosted();
@@ -249,7 +247,10 @@ function NewQuestion({ user, onDone, onCancel }) {
         ))}
       </select>
       <textarea className="forum-input" placeholder="اشرح سؤالك" value={body} maxLength={MAX.body} onChange={(e) => setBody(e.target.value)} />
+      {category === "برمجة" && <CodeBox />}
+      {category === "برمجة" && (
       <textarea className="forum-input forum-code" placeholder="الكود (اختياري)" value={code} maxLength={MAX.code} onChange={(e) => setCode(e.target.value)} spellCheck={false} />
+      )}
       {msg && <p className="forum-error">{msg}</p>}
       <button type="submit" className="quiz-btn" disabled={!valid || busy}>
         {busy ? "جاري النشر..." : "انشر السؤال"}
