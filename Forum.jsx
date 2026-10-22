@@ -75,7 +75,7 @@ function AuthBar({ user }) {
     return (
       <div className="forum-auth">
         <button type="button" className="quiz-btn" onClick={login}>سجّل دخول بجوجل</button>
-        <p className="forum-meta">لازم تسجّل دخول عشان تنشر أو ترد أو تبلّغ.</p>
+        <p className="forum-meta">قم بتسجيل الدخول لتتمكن من النشر والرد والإبلاغ.</p>
         {err && <p className="forum-error">{err}</p>}
       </div>
     );
@@ -83,7 +83,7 @@ function AuthBar({ user }) {
 
   return (
     <div className="forum-auth">
-      <span>أنت داخل باسم <strong>{user.displayName || "مستخدم"}</strong></span>
+      <span>تم التسجيل باسم <strong>{user.displayName || "مستخدم"}</strong></span>
       <button type="button" className="forum-report" onClick={() => signOut(auth)}>تسجيل الخروج</button>
     </div>
   );
@@ -328,7 +328,7 @@ function QuestionView({ user, question, onBack }) {
           <button type="submit" className="quiz-btn" disabled={busy || !body.trim()}>{busy ? "جاري الإرسال..." : "أرسل الرد"}</button>
         </form>
       ) : (
-        <p className="forum-meta">سجّل دخول لتكتب ردك.</p>
+        <p className="forum-meta">قم بتسجيل الدخول لتتمكن من الرد.</p>
       )}
     </div>
   );
