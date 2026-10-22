@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { questions, results, TELEGRAM_LINK, NOTIFY_ENDPOINT } from "./data.js";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "./firebase.js";
