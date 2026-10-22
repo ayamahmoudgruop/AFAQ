@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import CodeBox from "./CodeBox.jsx";
-import Forum from "./Forum.jsx";
+import Forum, { UserProfile } from "./Forum.jsx";
 import { ABOUT_TEXT, tracks, languages, resources } from "./data.js";
 
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
@@ -116,6 +116,15 @@ function PageView({ route, done, onPick }) {
     </a>
   );
 
+  if (route.startsWith("u/")) {
+    return (
+      <section className="page">
+        {back}
+        <UserProfile uid={route.slice(2)} />
+      </section>
+    );
+  }
+
   if (route === "forum") {
     return (
       <section className="page">
@@ -204,7 +213,7 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
   const PAGE_ROUTES = ["forum", "languages", "podcast", "platforms", ...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
-  const isPage = PAGE_ROUTES.includes(route);
+  const isPage = PAGE_ROUTES.includes(route) || route.startsWith("u/");
   function go(r) {
     window.location.hash = r ? "/" + r : "";
     window.scrollTo(0, 0);

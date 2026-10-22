@@ -1181,3 +1181,73 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   text-decoration: none;
 }
 .resource-item span { color: #3d3556; font-size: 0.95rem; line-height: 1.7; }
+
+/* المنتدى الحقيقي */
+.forum-list { display: flex; flex-direction: column; gap: 12px; }
+.forum-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+  background: #ffffff;
+  border: 1px solid #d8d2e3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #3b2a6b;
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.forum-item span, .forum-meta { color: #6b6380; font-size: 0.85rem; }
+.forum-question { display: flex; flex-direction: column; gap: 12px; }
+.forum-question h3 { color: #3b2a6b; margin: 0; }
+.forum-pre {
+  background: #f5f2fb;
+  border: 1px solid #d8d2e3;
+  border-radius: 12px;
+  padding: 12px;
+  overflow-x: auto;
+  direction: ltr;
+  text-align: left;
+  font-size: 13px;
+}
+.forum-reply { background: #ffffff; border: 1px solid #d8d2e3; border-radius: 12px; padding: 10px 12px; }
+.forum-reply p { margin: 4px 0; color: #3d3556; }
+
+/* التصنيفات والإبلاغ */
+.forum-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.forum-chip {
+  border: 1px solid #a58bdc;
+  background: #ffffff;
+  color: #3b2a6b;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.forum-chip.active { background: #3b2a6b; color: #ffffff; border-color: #3b2a6b; }
+.forum-tag {
+  align-self: flex-start;
+  background: #ede7f8;
+  color: #3b2a6b;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.forum-actions { display: flex; justify-content: flex-end; }
+.forum-report {
+  border: none;
+  background: none;
+  color: #9b2c2c;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.forum-report:disabled { color: #6b6380; cursor: default; }
+
+/* تسجيل الدخول */
+.forum-auth { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; color: #3d3556; }
+.forum-question a, .forum-reply a { color: #3b2a6b; font-weight: 700; }
