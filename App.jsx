@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import Forum, { UserProfile } from "./Forum.jsx";
-import { ABOUT_TEXT, tracks, languages, resources } from "./data.js";
+import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK } from "./data.js";
+import CodeBox from "./CodeBox.jsx";
 import { auth } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
 import { loadUserData, saveUserData } from "./sync.js";
@@ -110,8 +111,76 @@ function readRoute() {
   return window.location.hash.replace(/^#\/?/, "");
 }
 
+/* شارات الإنجاز: كل كورس بيخلص يطلع له شارة، والمسار كله يطلع له شارة كبيرة */
+function earnedBadges(trackTitle, courses, done) {
+  const list = courses || [];
+  const badges = list
+    .filter((c) => done.includes(c.title))
+    .map((c) => ({ key: "c-" + c.title, label: "🏅 خلصتي: " + c.title }));
+  if (list.length > 0 && list.every((c) => done.includes(c.title))) {
+    badges.push({ key: "track-" + trackTitle, label: "🏆 محترف " + trackTitle });
+  }
+  return badges;
+}
+
+/* احتفال بسيط لما المسار يوصل 100% */
+function Celebration() {
+  const pieces = Array.from({ length: 28 });
+  return (
+    <div className="confetti-wrap" aria-hidden="true">
+      {pieces.map((_, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: (i * 37) % 100 + "%",
+            animationDelay: (i % 7) * 0.2 + "s",
+            background: ["#a58bdc", "#3b2a6b", "#ede7f8", "#f5c542"][i % 4],
+          }}
+        />
+      ))}
+      <p className="celebrate-text">🎉 أتممتي المسار كله!</p>
+    </div>
+  );
+}
+
+/* لوحة المتعلم: تقدم القسم والشارات */
+function StudentPanel({ track, courses, done, user }) {
+  const list = courses || [];
+  const total = list.length;
+  const finished = list.filter((c) => done.includes(c.title)).length;
+  const pct = total ? Math.round((finished / total) * 100) : 0;
+  const badges = earnedBadges(track, list, done);
+  return (
+    <div className="side-card">
+      <h4>لوحة المتعلم</h4>
+      <p className="forum-meta">{user ? "أهلاً " + (user.displayName || "") : "أنت زائر، سجّل دخول عشان تحفظ تقدمك"}</p>
+      <div className="track-bar"><span style={{ width: pct + "%" }} /></div>
+      <p>خلصتي {finished} من {total} كورسات ({pct}%)</p>
+      {pct === 100 && total > 0 && <Celebration />}
+      <div className="badge-list">
+        {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا لما تخلصي كورس.</p>}
+        {badges.map((b) => (
+          <span key={b.key} className="badge-chip">{b.label}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* مجتمع تليجرام لكل قسم */
+function TelegramCard() {
+  return (
+    <div className="side-card">
+      <h4>مجتمع آفاق على تليجرام</h4>
+      <p className="forum-meta">تابع الأخبار وشارك مع الطلبة التانيين.</p>
+      <a className="quiz-btn" href={TELEGRAM_LINK} target="_blank" rel="noreferrer">انضم للمجتمع 🚀</a>
+    </div>
+  );
+}
+
 /* صفحة كاملة لكل مسار / للغات / للمنتدى */
-function PageView({ route, done, onPick }) {
+function PageView({ route, done, onPick, user }) {
   const back = (
     <a href="#" className="page-back" onClick={() => window.scrollTo(0, 0)}>
       الرجوع للرئيسية
@@ -182,8 +251,17 @@ function PageView({ route, done, onPick }) {
     <section className="page">
       {back}
       <h2>{title}</h2>
-      <TrackProgress courses={tracks[route]} done={done} />
-      <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
+      <div className="track-layout">
+        <div className="track-main">
+          <TrackProgress courses={tracks[route]} done={done} />
+          <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
+        </div>
+        <aside className="track-side">
+          <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
+          <TelegramCard />
+          {route === "programming" && <CodeBox />}
+        </aside>
+      </div>
     </section>
   );
 }
@@ -257,7 +335,7 @@ export default function App() {
         </nav>
       </header>
 
-      {isPage && <PageView route={route} done={done} onPick={pick} />}
+      {isPage && <PageView route={route} done={done} onPick={pick} user={user} />}
 
       {!isPage && (
         <>

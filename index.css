@@ -1274,3 +1274,135 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 /* حفظ الخطة بالحساب */
 .quiz-save { margin: 14px 0; padding: 12px; border: 1px dashed #a58bdc; border-radius: 12px; text-align: center; color: #3d3556; }
 .quiz-save p { margin: 0 0 8px; }
+
+/* ===== شجرة المسار (شكل الشجرة في المنتدى ومسارات آفاق) ===== */
+.tree {
+  position: relative;
+  padding: 12px 0 24px;
+}
+/* الجذع في النص */
+.tree::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  transform: translateX(-50%);
+  background: linear-gradient(#a58bdc, #3b2a6b);
+  box-shadow: 0 0 8px rgba(165, 139, 220, 0.6);
+  border-radius: 3px;
+}
+.tree-level { margin-bottom: 22px; position: relative; }
+
+/* اسم المستوى: كبسولة في النص على الجذع */
+.tree-node.tree-level-name {
+  width: max-content;
+  margin: 0 auto 16px;
+  padding: 6px 18px;
+  padding-right: 18px;
+  background: #3b2a6b;
+  color: #ffffff;
+  border-radius: 999px;
+  font-weight: 800;
+  text-align: center;
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(165, 139, 220, 0.5);
+}
+
+/* إلغاء الدوائر القديمة */
+.tree-node::before { display: none; }
+
+/* الكورسات: بتتبادل يمين وشمال على الجذع */
+.tree-node {
+  position: relative;
+  width: 46%;
+  padding-right: 0;
+  margin-bottom: 14px;
+  z-index: 1;
+}
+.tree-level .tree-node:nth-child(2n) { margin-left: auto; margin-right: 0; }
+.tree-level .tree-node:nth-child(2n+1) { margin-left: 0; margin-right: auto; }
+
+.tree-course {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #a58bdc;
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: #3b2a6b;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  box-shadow: 0 0 0 3px rgba(165, 139, 220, 0.15);
+  text-align: right;
+}
+.tree-course.is-done,
+.tree-node.is-done .tree-course {
+  background: #3b2a6b;
+  color: #ffffff;
+  border-color: #3b2a6b;
+}
+.tree-next { background: #ffffff; color: #3b2a6b; }
+
+@media (max-width: 480px) {
+  .tree-node { width: 48%; }
+  .tree-course { font-size: 0.85rem; padding: 8px 10px; }
+}
+
+
+/* صفحة المسار: الشجرة + الجانب */
+.track-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.track-side { display: flex; flex-direction: column; gap: 14px; }
+.side-card {
+  background: #ffffff;
+  border: 1px solid #d8d2e3;
+  border-radius: 16px;
+  padding: 14px;
+  color: #3d3556;
+  line-height: 1.7;
+}
+.side-card h4 { margin: 0 0 6px; color: #3b2a6b; font-weight: 800; }
+.side-card p { margin: 6px 0; }
+.side-card .quiz-btn { display: inline-block; text-decoration: none; }
+.track-side .codebox-section { margin: 0; padding: 0; max-width: none; }
+@media (min-width: 900px) {
+  .track-layout { grid-template-columns: 1.5fr 1fr; align-items: start; }
+}
+
+
+/* الشارات */
+.badge-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.badge-chip {
+  background: #ede7f8;
+  color: #3b2a6b;
+  border: 1px solid #a58bdc;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* الاحتفال عند 100% */
+.confetti-wrap { position: relative; overflow: hidden; height: 120px; margin: 12px 0; border-radius: 12px; background: #f7f4fc; }
+.confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  animation: confetti-fall 2.4s linear infinite;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(130px) rotate(360deg); opacity: 0; }
+}
+.celebrate-text {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin: 0;
+  padding-top: 44px;
+  color: #3b2a6b;
+  font-weight: 800;
+}
