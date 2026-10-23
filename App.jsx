@@ -4,7 +4,7 @@ import Forum, { UserProfile } from "./Forum.jsx";
 import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK } from "./data.js";
 import CodeBox from "./CodeBox.jsx";
 import { auth } from "./firebase.js";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { loadUserData, saveUserData, saveLeaderboard } from "./sync.js";
 import { collection, query, where, orderBy, limit, onSnapshot, doc } from "firebase/firestore";
 import { db } from "./firebase.js";
@@ -245,62 +245,53 @@ function NotificationsBox({ user }) {
   );
 }
 
-/* لوحة المتعلم: حساب، إشعارات، تقدم كل الأقسام، وشارات */
+/* زرار ☰: بيفتح حساب المتعلم، وجواه الإشعارات والشارات وتسجيل الخروج */
 function StudentPanel({ track, courses, done, user }) {
-  const sectionKeys = [...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
-  const nameOf = (k) => {
-    const lang = languages.find((l) => l.key === k);
-    return lang ? lang.title : TRACK_TITLES[k];
-  };
-  let allTotal = 0;
-  let allDone = 0;
-  const rows = sectionKeys.map((k) => {
-    const list = tracks[k] || [];
-    const finished = list.filter((c) => done.includes(c.title)).length;
-    allTotal += list.length;
-    allDone += finished;
-    return {
-      key: k,
-      name: nameOf(k),
-      total: list.length,
-      finished,
-      pct: list.length ? Math.round((finished / list.length) * 100) : 0,
-    };
-  });
-  const overall = allTotal ? Math.round((allDone / allTotal) * 100) : 0;
+  const [open, setOpen] = useState(false);
+  const [sub, setSub] = useState(null); // null | "notif" | "badges"
   const badges = earnedBadges(track, courses, done);
-  const list = courses || [];
-  const trackPct = list.length ? Math.round((list.filter((c) => done.includes(c.title)).length / list.length) * 100) : 0;
+  const trackName = (languages.find((l) => l.key === track) || {}).title || TRACK_TITLES[track] || "";
 
   return (
-    <div className="side-card">
-      <h4>حساب المتعلم</h4>
-      <p className="forum-meta">{user ? "أهلاً " + (user.displayName || "") : "أنت زائر، سجّل دخول عشان تحفظ تقدمك"}</p>
+    <div className="acc-wrap">
+      <button
+        type="button"
+        className="acc-menu-btn acc-toggle"
+        aria-label="القايمة"
+        onClick={() => {
+          setOpen(!open);
+          setSub(null);
+        }}
+      >
+        ☰
+      </button>
 
-      <p className="dash-sub">التقدم الكلي ({overall}%)</p>
-      <div className="track-bar"><span style={{ width: overall + "%" }} /></div>
+      {open && (
+        <div className="side-card">
+          <p className="forum-meta">
+            {user ? "أهلاً " + (user.displayName || "") : "أنت زائر، سجّل دخول عشان تحفظ تقدمك"}
+          </p>
+          <p className="forum-meta">المسار: {trackName}</p>
 
-      <NotificationsBox user={user} />
-
-      <p className="dash-sub">الأقسام</p>
-      {rows.map((r) => (
-        <div key={r.key} className="section-row">
-          <div className="section-head">
-            <span>{r.name}</span>
-            <span>{r.finished}/{r.total}</span>
+          <div className="acc-menu">
+            <button type="button" onClick={() => setSub(sub === "notif" ? null : "notif")}>🔔 الإشعارات</button>
+            <button type="button" onClick={() => setSub(sub === "badges" ? null : "badges")}>🏅 الشارات</button>
+            {user && (
+              <button type="button" onClick={() => signOut(auth)}>🚪 تسجيل الخروج</button>
+            )}
           </div>
-          <div className="track-bar thin"><span style={{ width: r.pct + "%" }} /></div>
+
+          {sub === "notif" && <NotificationsBox user={user} />}
+          {sub === "badges" && (
+            <div className="badge-list">
+              {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا عند إنهاء أي كورس.</p>}
+              {badges.map((b) => (
+                <span key={b.key} className="badge-chip">{b.label}</span>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
-
-      {trackPct === 100 && list.length > 0 && <Celebration />}
-
-      <div className="badge-list">
-        {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا عند إنهاء أي كورس.</p>}
-        {badges.map((b) => (
-          <span key={b.key} className="badge-chip">{b.label}</span>
-        ))}
-      </div>
+      )}
     </div>
   );
 }
@@ -428,11 +419,13 @@ function PageView({ route, done, onPick, user }) {
       <div className="track-layout">
         <div className="track-main">
           <TrackProgress courses={tracks[route]} done={done} />
+          {tracks[route] && tracks[route].length > 0 &&
+            tracks[route].every((c) => done.includes(c.title)) && <Celebration />}
           <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
+          <TelegramCard />
         </div>
         <aside className="track-side">
           <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
-          <TelegramCard />
           {route === "programming" && <CodeBox />}
         </aside>
       </div>
