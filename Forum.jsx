@@ -8,7 +8,12 @@ import {
   limit,
   onSnapshot,
   serverTimestamp,
+  getDocs,
+  updateDoc,
+  doc,
+  arrayUnion,
 } from "firebase/firestore";
+import { tracks } from "./data.js";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth, googleProvider } from "./firebase.js";
 import CodeBox from "./CodeBox.jsx";
@@ -121,6 +126,127 @@ function ReportButton({ user, questionId, replyId = "" }) {
   );
 }
 
+/* زرار "ده ساعدني": كل مستخدم يضغطه مرة واحدة على الرد */
+function HelpfulButton({ user, questionId, reply }) {
+  const list = reply.helpful || [];
+  const mine = !!user && list.includes(user.uid);
+  const isOwn = !!user && reply.uid === user.uid;
+  const [busy, setBusy] = useState(false);
+
+  async function vote() {
+    if (!user || mine || isOwn || busy) return;
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, "questions", questionId, "replies", reply.id), {
+        helpful: arrayUnion(user.uid),
+      });
+    } catch (err) {
+      // لو فشل، الزرار يفضل متاح
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button type="button" className="forum-helpful" onClick={vote} disabled={!user || mine || isOwn || busy}>
+      👍 ده ساعدني ({list.length})
+    </button>
+  );
+}
+
+/* لوحة المتصدرين: نسبة لكل عضو من 3 مجالات */
+const TRACK_TOTAL = Object.values(tracks).reduce((n, list) => n + list.length, 0);
+
+function Leaderboard() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    async function build() {
+      try {
+        const stats = {};
+        const get = (uid, name) => {
+          if (!uid) return null;
+          if (!stats[uid]) stats[uid] = { uid, name: name || "مستخدم", asks: 0, replies: 0, helpful: 0, done: 0 };
+          if (name) stats[uid].name = name;
+          return stats[uid];
+        };
+
+        // الأسئلة والردود
+        const qSnap = await getDocs(query(collection(db, "questions"), limit(200)));
+        for (const d of qSnap.docs) {
+          const q = d.data();
+          const s = get(q.uid, q.name);
+          if (s) s.asks++;
+          const rSnap = await getDocs(collection(db, "questions", d.id, "replies"));
+          rSnap.docs.forEach((rd) => {
+            const r = rd.data();
+            const rs = get(r.uid, r.name);
+            if (rs) {
+              rs.replies++;
+              rs.helpful += (r.helpful || []).length;
+            }
+          });
+        }
+
+        // الكورسات المكتملة (من لوحة الكورسات)
+        const lbSnap = await getDocs(collection(db, "leaderboard"));
+        lbSnap.docs.forEach((d) => {
+          const s = get(d.id, d.data().name);
+          if (s) s.done = d.data().score || 0;
+        });
+
+        const list = Object.values(stats);
+        const maxHelp = Math.max(1, ...list.map((s) => s.helpful));
+        const maxAct = Math.max(1, ...list.map((s) => s.asks + s.replies));
+        const scored = list
+          .map((s) => {
+            const pCourses = TRACK_TOTAL ? (s.done / TRACK_TOTAL) * 100 : 0;
+            const pHelp = (s.helpful / maxHelp) * 100;
+            const pAct = ((s.asks + s.replies) / maxAct) * 100;
+            const total = pCourses * 0.4 + pHelp * 0.4 + pAct * 0.2;
+            return { ...s, pCourses, pHelp, pAct, total };
+          })
+          .sort((x, y) => y.total - x.total)
+          .slice(0, 20);
+        if (alive) setRows(scored);
+      } catch (e) {
+        if (alive) setErr(true);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+    build();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) return <p className="tree-empty">جاري حساب الترتيب...</p>;
+  if (err) return <p className="forum-error">تعذّر تحميل المتصدرين. حدّث الصفحة وحاول مرة أخرى.</p>;
+  if (rows.length === 0) return <p className="tree-empty">لسه مفيش نشاط. أول أسئلة وردود هتبدأ الترتيب.</p>;
+
+  const me = null;
+  return (
+    <div className="lb-list">
+      {rows.map((r, i) => (
+        <div key={r.uid} className="lb-row">
+          <span className="lb-rank">{i + 1}</span>
+          <div className="lb-info">
+            <span className="lb-name">{r.name}</span>
+            <span className="lb-detail">
+              كورسات {Math.round(r.pCourses)}% · مساعدة {Math.round(r.pHelp)}% · تفاعل {Math.round(r.pAct)}%
+            </span>
+          </div>
+          <span className="lb-score">{Math.round(r.total)}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Forum() {
   const user = useUser();
   const [questions, setQuestions] = useState([]);
@@ -162,22 +288,23 @@ export default function Forum() {
       </button>
 
       <div className="forum-chips">
-        {["الكل", ...CATEGORIES].map((c) => (
+        {["الكل", ...CATEGORIES, "المتصدرين"].map((c) => (
           <button
             key={c}
             type="button"
             className={"forum-chip" + (filter === c ? " active" : "")}
             onClick={() => setFilter(c)}
           >
-            {c}
+            {c === "المتصدرين" ? "🏆 المتصدرين" : c}
           </button>
         ))}
       </div>
 
       {loadError && <p className="forum-error">تعذّر تحميل الأسئلة. حدّث الصفحة وحاول مرة أخرى.</p>}
-      {!loadError && shown.length === 0 && <p className="tree-empty">لا توجد أسئلة في هذا القسم حتى الآن.</p>}
+      {filter === "المتصدرين" && <Leaderboard />}
+      {filter !== "المتصدرين" && !loadError && shown.length === 0 && <p className="tree-empty">لا توجد أسئلة في هذا القسم حتى الآن.</p>}
 
-      {shown.map((q) => (
+      {filter !== "المتصدرين" && shown.map((q) => (
         <button
           key={q.id}
           type="button"
@@ -317,6 +444,7 @@ function QuestionView({ user, question, onBack }) {
           </p>
           <p>{r.body}</p>
           <div className="forum-actions">
+            <HelpfulButton user={user} questionId={question.id} reply={r} />
             <ReportButton user={user} questionId={question.id} replyId={r.id} />
           </div>
         </div>

@@ -5,7 +5,9 @@ import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK } from "./data.
 import CodeBox from "./CodeBox.jsx";
 import { auth } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
-import { loadUserData, saveUserData } from "./sync.js";
+import { loadUserData, saveUserData, saveLeaderboard } from "./sync.js";
+import { collection, query, where, orderBy, limit, onSnapshot, doc } from "firebase/firestore";
+import { db } from "./firebase.js";
 
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
 const TRACK_TITLES = {
@@ -61,25 +63,34 @@ function Modal({ open, onClose, title, className = "", children }) {
 }
 
 /* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
+const TREE_ICONS = { "مبتدئ": "🌱", "متوسط": "⚡", "متقدم": "🚀" };
+
 function CourseTree({ courses, onPick, done }) {
   if (!courses || courses.length === 0) {
     return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
   }
   const ordered = LEVELS.flatMap((level) => courses.filter((c) => c.level === level));
   const next = ordered.find((c) => !done.includes(c.title));
+  // من فوق لتحت: متقدم في الأول والمبتدئ في الآخر، والمسار بيبدأ من تحت
+  const topDown = [...LEVELS].reverse();
   return (
     <div className="tree">
-      {LEVELS.map((level) => {
+      <div className="tree-anchor">التفوق</div>
+      {topDown.map((level) => {
         const list = courses.filter((c) => c.level === level);
         if (list.length === 0) return null;
         return (
           <div className="tree-level" key={level}>
-            <div className="tree-node tree-level-name">{level}</div>
-            {list.map((c) => {
+            <div className="tree-level-name">{level}</div>
+            {list.map((c, i) => {
               const isDone = done.includes(c.title);
               return (
-                <div className={"tree-node" + (isDone ? " is-done" : "")} key={c.title}>
+                <div
+                  className={"tree-node " + (i % 2 === 0 ? "left" : "right") + (isDone ? " is-done" : "")}
+                  key={c.title}
+                >
                   <button type="button" className={"tree-course" + (isDone ? " is-done" : "")} onClick={() => onPick(c)}>
+                    <span className="tree-icon">{TREE_ICONS[level] || "📘"}</span>
                     {isDone ? "✓ " : ""}{c.title}
                     {next && next.title === c.title && <span className="tree-next">التالي</span>}
                   </button>
@@ -89,8 +100,17 @@ function CourseTree({ courses, onPick, done }) {
           </div>
         );
       })}
+      <div className="tree-anchor bottom">بداية المسار</div>
     </div>
   );
+}
+
+function findCourse(title) {
+  for (const k of Object.keys(tracks)) {
+    const c = tracks[k].find((x) => x.title === title);
+    if (c) return c;
+  }
+  return null;
 }
 
 /* تقدم المسار: عدد الكورسات اللي اتعملت */
@@ -101,7 +121,7 @@ function TrackProgress({ courses, done }) {
   const pct = Math.round((finished / total) * 100);
   return (
     <div className="track-progress">
-      <p>خلصتي {finished} من {total} كورسات</p>
+      <p>تم إنهاء {finished} من {total} كورسات</p>
       <div className="track-bar"><span style={{ width: pct + "%" }} /></div>
     </div>
   );
@@ -116,7 +136,7 @@ function earnedBadges(trackTitle, courses, done) {
   const list = courses || [];
   const badges = list
     .filter((c) => done.includes(c.title))
-    .map((c) => ({ key: "c-" + c.title, label: "🏅 خلصتي: " + c.title }));
+    .map((c) => ({ key: "c-" + c.title, label: "🏅 محترف " + (c.badge || c.title) }));
   if (list.length > 0 && list.every((c) => done.includes(c.title))) {
     badges.push({ key: "track-" + trackTitle, label: "🏆 محترف " + trackTitle });
   }
@@ -139,27 +159,144 @@ function Celebration() {
           }}
         />
       ))}
-      <p className="celebrate-text">🎉 أتممتي المسار كله!</p>
+      <p className="celebrate-text">🎉 تم إنهاء المسار كله!</p>
     </div>
   );
 }
 
-/* لوحة المتعلم: تقدم القسم والشارات */
+function readJSON(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+/* إشعارات: الردود الجديدة على أسئلة المتعلم */
+function NotificationsBox({ user }) {
+  const [mine, setMine] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [seen, setSeen] = useState(() => readJSON("afaq-seen", {}));
+
+  // أسئلة المستخدم
+  useEffect(() => {
+    if (!user) {
+      setMine([]);
+      return;
+    }
+    const q = query(collection(db, "questions"), where("uid", "==", user.uid), limit(30));
+    return onSnapshot(q, (snap) =>
+      setMine(snap.docs.map((d) => ({ id: d.id, title: d.data().title || "" })))
+    );
+  }, [user]);
+
+  // عدد الردود على كل سؤال
+  const idsKey = mine.map((m) => m.id).join(",");
+  useEffect(() => {
+    const unsubs = mine.map((m) =>
+      onSnapshot(collection(db, "questions", m.id, "replies"), (snap) =>
+        setCounts((prev) => ({ ...prev, [m.id]: snap.size }))
+      )
+    );
+    return () => unsubs.forEach((u) => u());
+  }, [idsKey]);
+
+  // أول مرة نشوف سؤال: نعتبر الردود الموجودة مقروءة
+  useEffect(() => {
+    const updates = {};
+    mine.forEach((m) => {
+      if (seen[m.id] === undefined && counts[m.id] !== undefined) updates[m.id] = counts[m.id];
+    });
+    if (Object.keys(updates).length) {
+      const next = { ...seen, ...updates };
+      setSeen(next);
+      try {
+        localStorage.setItem("afaq-seen", JSON.stringify(next));
+      } catch (e) {}
+    }
+  }, [counts, mine]);
+
+  function markSeen(id) {
+    const next = { ...seen, [id]: counts[id] || 0 };
+    setSeen(next);
+    try {
+      localStorage.setItem("afaq-seen", JSON.stringify(next));
+    } catch (e) {}
+  }
+
+  if (!user) {
+    return <p className="notif-empty">سجّل دخول عشان توصلك إشعارات الردود على أسئلتك.</p>;
+  }
+
+  const fresh = mine
+    .map((m) => ({ ...m, unseen: (counts[m.id] || 0) - (seen[m.id] || 0) }))
+    .filter((m) => m.unseen > 0);
+
+  return (
+    <div className="notif-box">
+      <p className="dash-sub">الإشعارات</p>
+      {fresh.length === 0 && <p className="notif-empty">لا توجد ردود جديدة.</p>}
+      {fresh.map((m) => (
+        <a key={m.id} href="#/forum" className="notif-item" onClick={() => markSeen(m.id)}>
+          💬 ردّ جديد على: {m.title} ({m.unseen})
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/* لوحة المتعلم: حساب، إشعارات، تقدم كل الأقسام، وشارات */
 function StudentPanel({ track, courses, done, user }) {
+  const sectionKeys = [...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
+  const nameOf = (k) => {
+    const lang = languages.find((l) => l.key === k);
+    return lang ? lang.title : TRACK_TITLES[k];
+  };
+  let allTotal = 0;
+  let allDone = 0;
+  const rows = sectionKeys.map((k) => {
+    const list = tracks[k] || [];
+    const finished = list.filter((c) => done.includes(c.title)).length;
+    allTotal += list.length;
+    allDone += finished;
+    return {
+      key: k,
+      name: nameOf(k),
+      total: list.length,
+      finished,
+      pct: list.length ? Math.round((finished / list.length) * 100) : 0,
+    };
+  });
+  const overall = allTotal ? Math.round((allDone / allTotal) * 100) : 0;
+  const badges = earnedBadges(track, courses, done);
   const list = courses || [];
-  const total = list.length;
-  const finished = list.filter((c) => done.includes(c.title)).length;
-  const pct = total ? Math.round((finished / total) * 100) : 0;
-  const badges = earnedBadges(track, list, done);
+  const trackPct = list.length ? Math.round((list.filter((c) => done.includes(c.title)).length / list.length) * 100) : 0;
+
   return (
     <div className="side-card">
-      <h4>لوحة المتعلم</h4>
+      <h4>حساب المتعلم</h4>
       <p className="forum-meta">{user ? "أهلاً " + (user.displayName || "") : "أنت زائر، سجّل دخول عشان تحفظ تقدمك"}</p>
-      <div className="track-bar"><span style={{ width: pct + "%" }} /></div>
-      <p>خلصتي {finished} من {total} كورسات ({pct}%)</p>
-      {pct === 100 && total > 0 && <Celebration />}
+
+      <p className="dash-sub">التقدم الكلي ({overall}%)</p>
+      <div className="track-bar"><span style={{ width: overall + "%" }} /></div>
+
+      <NotificationsBox user={user} />
+
+      <p className="dash-sub">الأقسام</p>
+      {rows.map((r) => (
+        <div key={r.key} className="section-row">
+          <div className="section-head">
+            <span>{r.name}</span>
+            <span>{r.finished}/{r.total}</span>
+          </div>
+          <div className="track-bar thin"><span style={{ width: r.pct + "%" }} /></div>
+        </div>
+      ))}
+
+      {trackPct === 100 && list.length > 0 && <Celebration />}
+
       <div className="badge-list">
-        {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا لما تخلصي كورس.</p>}
+        {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا عند إنهاء أي كورس.</p>}
         {badges.map((b) => (
           <span key={b.key} className="badge-chip">{b.label}</span>
         ))}
@@ -179,6 +316,33 @@ function TelegramCard() {
   );
 }
 
+/* لوحة المتصدرين */
+function Leaderboard({ user }) {
+  const [rows, setRows] = useState([]);
+  const [err, setErr] = useState(false);
+  useEffect(() => {
+    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(20));
+    return onSnapshot(
+      q,
+      (snap) => setRows(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      () => setErr(true)
+    );
+  }, []);
+  if (err) return <p className="forum-error">تعذّر تحميل المتصدرين، حدّث الصفحة.</p>;
+  if (rows.length === 0) return <p className="tree-empty">لسه مفيش متصدرين، ابدأي الكورسات وكوني أول واحد.</p>;
+  return (
+    <div className="lb-list">
+      {rows.map((r, i) => (
+        <div key={r.id} className={"lb-row" + (user && user.uid === r.id ? " me" : "")}>
+          <span className="lb-rank">{i + 1}</span>
+          <span className="lb-name">{r.name}{user && user.uid === r.id ? " (أنت)" : ""}</span>
+          <span className="lb-score">{r.score} كورس</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* صفحة كاملة لكل مسار / للغات / للمنتدى */
 function PageView({ route, done, onPick, user }) {
   const back = (
@@ -192,6 +356,16 @@ function PageView({ route, done, onPick, user }) {
       <section className="page">
         {back}
         <UserProfile uid={route.slice(2)} />
+      </section>
+    );
+  }
+
+  if (route === "leaderboard") {
+    return (
+      <section className="page">
+        {back}
+        <h2>المتصدرين</h2>
+        <Leaderboard user={user} />
       </section>
     );
   }
@@ -270,6 +444,31 @@ export default function App() {
   const [dialog, setDialog] = useState(null); // "about" | "english" | "german" | null
   const [course, setCourse] = useState(null);
   const [courseBack, setCourseBack] = useState(null);
+  const [pending, setPending] = useState(() => {
+    try {
+      return localStorage.getItem("afaq-pending") || "";
+    } catch (e) {
+      return "";
+    }
+  });
+  // لما الطالب يرجع للموقع بعد ما فتح الكورس، نفتح كارت الكورس تاني عشان يعلّمه
+  useEffect(() => {
+    function onBack() {
+      if (document.visibilityState !== "visible") return;
+      let title = "";
+      try {
+        title = localStorage.getItem("afaq-pending") || "";
+      } catch (e) {}
+      const c = title ? findCourse(title) : null;
+      if (!c) return;
+      setPending(title);
+      setCourse(c);
+      setCourseBack(null);
+      setDialog("course");
+    }
+    document.addEventListener("visibilitychange", onBack);
+    return () => document.removeEventListener("visibilitychange", onBack);
+  }, []);
   const [done, setDone] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("afaq-done") || "[]");
@@ -285,23 +484,47 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [doneReady, setDoneReady] = useState(false);
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), []);
-  // لما يسجل دخول: ندمج الكورسات المكتملة اللي على الجهاز مع اللي محفوظة على حسابه
+  // الكورسات المكتملة متزامنة على كل الأجهزة: أي تغيير يظهر فوراً
+  const remoteDone = useRef(null);
   useEffect(() => {
-    if (!user) return;
-    loadUserData(user.uid)
-      .then((data) => {
-        const remote = data?.done || [];
-        setDone((prev) => Array.from(new Set([...prev, ...remote])));
-      })
-      .catch(() => {})
-      .finally(() => setDoneReady(true));
+    if (!user) {
+      remoteDone.current = null;
+      return;
+    }
+    let first = true;
+    const unsub = onSnapshot(
+      doc(db, "users", user.uid),
+      (snap) => {
+        const remote = snap.exists() ? snap.data().done || [] : [];
+        if (first) {
+          first = false;
+          // أول مرة: ندمج اللي على الجهاز مع اللي على الحساب
+          setDone((prev) => Array.from(new Set([...prev, ...remote])));
+        } else {
+          setDone(remote);
+        }
+        remoteDone.current = JSON.stringify(remote);
+        setDoneReady(true);
+      },
+      () => setDoneReady(true)
+    );
+    return unsub;
   }, [user]);
-  // أي تغيير في الكورسات المكتملة يتحفظ على الحساب
+
+  // أي تغيير على الجهاز يتحفظ فوراً على الحساب (لو مختلف عن اللي محفوظ)
   useEffect(() => {
     if (!user || !doneReady) return;
+    const key = JSON.stringify(done);
+    if (key === remoteDone.current) return;
+    remoteDone.current = key;
     saveUserData(user.uid, { done }).catch(() => {});
+    saveLeaderboard(user.uid, user.displayName || "مستخدم", done.length).catch(() => {});
   }, [done, user, doneReady]);
   function toggleDone(title) {
+    try {
+      if (localStorage.getItem("afaq-pending") === title) localStorage.removeItem("afaq-pending");
+    } catch (e) {}
+    setPending("");
     setDone((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
   }
   const [route, setRoute] = useState(readRoute);
@@ -310,7 +533,7 @@ export default function App() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
-  const PAGE_ROUTES = ["forum", "languages", "podcast", "platforms", ...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
+  const PAGE_ROUTES = ["forum", "leaderboard", "languages", "podcast", "platforms", ...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
   const isPage = PAGE_ROUTES.includes(route) || route.startsWith("u/");
   function go(r) {
     window.location.hash = r ? "/" + r : "";
@@ -331,6 +554,7 @@ export default function App() {
           <a href="#" className="active">الرئيسية</a>
           <a href="#learning">الكورسات</a>
           <a href="#resources">الموارد المجانية</a>
+          <a href="#/leaderboard">المتصدرين</a>
           <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
         </nav>
       </header>
@@ -417,25 +641,6 @@ export default function App() {
         <p>{ABOUT_TEXT}</p>
       </Modal>
 
-      <Modal open={dialog === "course"} onClose={close} title={course ? course.title : ""}>
-        {course && (
-          <div className="course-card">
-            <p className="course-level">{course.level}</p>
-            <p>{course.desc || "وصف الكورس هيتضاف قريباً."}</p>
-            {course.exercise && (
-              <>
-                <h4>تمرين</h4>
-                <p>{course.exercise}</p>
-              </>
-            )}
-            <button type="button" className={"quiz-btn" + (done.includes(course.title) ? " ghost" : "")} onClick={() => toggleDone(course.title)}>
-              {done.includes(course.title) ? "✓ خلصته (اضغط للتراجع)" : "علّم كمكتمل"}
-            </button>
-            <a className="btn-course" href={course.href} target="_blank" rel="noreferrer">افتح الكورس</a>
-            <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
-          </div>
-        )}
-      </Modal>
 
       <footer className="site-footer">
         <p className="footer-title">🚀 آفاق</p>
@@ -465,6 +670,43 @@ export default function App() {
       </footer>
         </>
       )}
+
+      <Modal open={dialog === "course"} onClose={close} title={course ? course.title : ""}>
+        {course && (
+          <div className="course-card">
+            <p className="course-level">{course.level}</p>
+            <p>{course.desc || "وصف الكورس هيتضاف قريباً."}</p>
+            {course.exercise && (
+              <>
+                <h4>تمرين</h4>
+                <p>{course.exercise}</p>
+              </>
+            )}
+            {pending === course.title && !done.includes(course.title) && (
+              <p className="forum-meta">رجعت من الكورس؟ اضغط علّم كمكتمل لو خلصته.</p>
+            )}
+            <button type="button" className={"quiz-btn" + (done.includes(course.title) ? " ghost" : "")} onClick={() => toggleDone(course.title)}>
+              {done.includes(course.title) ? "✓ تم الإنهاء (اضغط للتراجع)" : "علّم كمكتمل"}
+            </button>
+            <a
+              className="btn-course"
+              href={course.href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => {
+                try {
+                  localStorage.setItem("afaq-pending", course.title);
+                } catch (e) {}
+                setPending(course.title);
+              }}
+            >
+              افتح الكورس
+            </a>
+            <p className="forum-meta">بعد ما تخلّص الكورس، ارجع واضغط علّم كمكتمل.</p>
+            <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

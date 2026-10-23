@@ -10,3 +10,12 @@ export async function loadUserData(uid) {
 export async function saveUserData(uid, data) {
   await setDoc(doc(db, "users", uid), { ...data, updatedAt: serverTimestamp() }, { merge: true });
 }
+
+// لوحة المتصدرين: اسم + عدد الكورسات المكتملة (عام للكل)
+export async function saveLeaderboard(uid, name, score) {
+  await setDoc(
+    doc(db, "leaderboard", uid),
+    { name: String(name).slice(0, 40), score: Number(score) || 0, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+}

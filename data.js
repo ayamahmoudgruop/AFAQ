@@ -63,27 +63,27 @@ export const results = {
 
 export const englishCourses = [
   {
-    title: "كورس اللغة الانجليزية_AUC",
+    title: "كورس اللغة الانجليزية_AUC", badge: "الأساسيات الإنجليزية",
     items: ["الجهة: الجامعة الأمريكية بالقاهرة", "المستوى: تحديد المستوى باختبار", "المدة : من 4_6 اسابيع", "الانجاز : رقمي عند اتمام الكورس"],
     href: "https://www.aucegypt.edu/academics/free-english-courses",
   },
   {
-    title: "كورس اللغة الانجليزية_British Council",
+    title: "كورس اللغة الانجليزية_British Council", badge: "الإنجليزية من الصفر",
     items: ["الجهة:المجلس الثقافي البريطاني", "المستوى : من A1 إلى C1", "المدة : مفتوحة", "الانجاز : شهادة رقمية مجانية"],
     href: "https://learnenglish.britishcouncil.org",
   },
   {
-    title: "-كورس اللغه الانجليزيه Understanding IELTS",
+    title: "-كورس اللغه الانجليزيه Understanding IELTS", badge: "IELTS",
     items: ["الجهة:المجلس الثقافي البريطاني", "المستوى : B1 متوسط", "المدة : 6 أسابيع", "الانجاز : شهادة مجانية"],
     href: "https://www.futurelearn.com/courses/understanding-ielts",
   },
   {
-    title: "English for Beginners - USA Learns",
+    title: "English for Beginners - USA Learns", badge: "الإنجليزية للمبتدئين",
     items: ["الجهة: الولايات المتحدة الأمريكية - مبادرة USA Learns", "المستوى: مبتدئ", "المدة : 20 ساعة", "الانجاز : شهادة اتمام مجانية 100%"],
     href: "https://www.usalearns.org",
   },
   {
-    title: "كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing",
+    title: "كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing", badge: "الكتابة الإقناعية",
     items: ["الجهة: Harvard University", "المستوى: مبتدئ - كتابة ومحادثة", "المدة: 8 أسابيع", " مجاني 100% - Audit"],
     href: "https://pll.harvard.edu/course/rhetoric-art-persuasive-writing-and-public-speaking",
   },
@@ -119,7 +119,7 @@ export const tracks = {
     { level: "مبتدئ", title: "كورس اللغة الإنجليزية-Harvard - Rhetoric: The Art of Persuasive Writing", href: "https://pll.harvard.edu/course/rhetoric-art-persuasive-writing-and-public-speaking", desc: "كورس من جامعة هارفارد عن الكتابة الإقناعية والخطابة، مدته 8 أسابيع، ومجاني بخيار Audit." },
   ],
   german: [
-    { level: "مبتدئ", title: "دورة اللغة الألمانية", href: "https://learngerman.dw.com/en/nicos-weg/c-36519789", desc: "كورس ألماني من Deutsche Welle للمستوى A1، ومدته 8 أسابيع." },
+    { level: "مبتدئ", title: "دورة اللغة الألمانية", badge: "الألمانية (A1)", href: "https://learngerman.dw.com/en/nicos-weg/c-36519789", desc: "كورس ألماني من Deutsche Welle للمستوى A1، ومدته 8 أسابيع." },
   ],
   programming: [],
   marketing: [],
