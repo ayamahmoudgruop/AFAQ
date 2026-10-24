@@ -75,14 +75,14 @@ function CourseTree({ courses, onPick, done }) {
   const topDown = [...LEVELS].reverse();
 
   // نحسب مكان كل عنصر بالترتيب (المستويات والكورسات)
-  const ROW = 138;
+  const ROW = 124;
   const items = [];
   let y = 70;
   topDown.forEach((level) => {
     const list = courses.filter((c) => c.level === level);
     if (list.length === 0) return;
     items.push({ type: "level", key: "lv-" + level, label: level, y });
-    y += 74;
+    y += 62;
     list.forEach((c, i) => {
       items.push({ type: "course", key: c.title, c, level, side: i % 2 === 0 ? "left" : "right", y });
       y += ROW;
@@ -477,11 +477,13 @@ function PageView({ route, done, onPick, user }) {
           {tracks[route] && tracks[route].length > 0 &&
             tracks[route].every((c) => done.includes(c.title)) && <Celebration />}
           <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
-          <TelegramCard />
+          <div className="track-bottom">
+            <div>{route === "programming" && <CodeCard />}</div>
+            <div><TelegramCard /></div>
+          </div>
         </div>
         <aside className="track-side">
           <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
-          {route === "programming" && <CodeCard />}
         </aside>
       </div>
     </section>
