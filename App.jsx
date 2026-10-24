@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import Forum, { UserProfile } from "./Forum.jsx";
-import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK } from "./data.js";
+import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK, stageTests } from "./data.js";
 import CodeBox from "./CodeBox.jsx";
 import { auth } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -62,15 +62,82 @@ function Modal({ open, onClose, title, className = "", children }) {
   );
 }
 
+/* اختبار الكورس: أسئلة واحدة واحدة، والنجاح من 70% */
+function CourseQuiz({ course, onPass }) {
+  const qs = course.test || [];
+  const [idx, setIdx] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const [result, setResult] = useState(null); // null | "pass" | "fail"
+
+  function next() {
+    if (picked === null) return;
+    const final = score + (picked === qs[idx].answer ? 1 : 0);
+    if (idx + 1 < qs.length) {
+      setScore(final);
+      setIdx(idx + 1);
+      setPicked(null);
+      return;
+    }
+    const ok = final / qs.length >= 0.7;
+    setResult(ok ? "pass" : "fail");
+    if (ok) onPass();
+  }
+
+  function retry() {
+    setIdx(0);
+    setPicked(null);
+    setScore(0);
+    setResult(null);
+  }
+
+  if (result === "pass") return <p className="forum-thanks">🎉 نجحتي في الاختبار، والمرحلة الجاية اتفتحت لو خلصتي الكورسات كلها.</p>;
+
+  if (result === "fail") {
+    return (
+      <div className="quiz-test">
+        <p>محتاجة تحاولي تاني عشان تنجحي (70% على الأقل).</p>
+        <button type="button" className="quiz-btn" onClick={retry}>حاول تاني</button>
+      </div>
+    );
+  }
+
+  const q = qs[idx];
+  return (
+    <div className="quiz-test">
+      <p className="forum-meta">سؤال {idx + 1} من {qs.length}</p>
+      <p className="quiz-test-q">{q.q}</p>
+      <div className="quiz-options">
+        {q.options.map((opt, i) => (
+          <label key={i}>
+            <input type="radio" name={"t-" + course.title} checked={picked === i} onChange={() => setPicked(i)} />
+            <span>{opt}</span>
+          </label>
+        ))}
+      </div>
+      <button type="button" className="quiz-btn" disabled={picked === null} onClick={next}>
+        {idx + 1 === qs.length ? "خلّص الاختبار" : "التالي"}
+      </button>
+    </div>
+  );
+}
+
 /* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
 const TREE_ICONS = { "مبتدئ": "🌱", "متوسط": "⚡", "متقدم": "🚀" };
 
-function CourseTree({ courses, onPick, done }) {
+function CourseTree({ courses, onPick, done, track }) {
   if (!courses || courses.length === 0) {
     return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
   }
   const ordered = LEVELS.flatMap((level) => courses.filter((c) => c.level === level));
   const next = ordered.find((c) => !done.includes(c.title));
+  const stageKeyOf = (lv) => "stage::" + track + "::" + lv;
+  // كل كورس بيتفتح بعد ما الكورس اللي قبله يتعلّم كمكتمل (بعد اجتياز اختباره)
+  const lockedSet = new Set();
+  ordered.forEach((c, i) => {
+    if (i > 0 && !done.includes(ordered[i - 1].title) && !done.includes(c.title)) lockedSet.add(c.title);
+  });
+
   // من فوق لتحت: المتقدم فوق والمبتدئ تحت، والمسار بيبدأ من تحت
   const topDown = [...LEVELS].reverse();
 
@@ -78,15 +145,44 @@ function CourseTree({ courses, onPick, done }) {
   const ROW = 124;
   const items = [];
   let y = 70;
+  // المرحلة بتتفتح لما كل كورسات المرحلة اللي قبلها تخلص (بالاختبار)
+  const unlockedMap = {};
+  let prevOk = true;
+  LEVELS.forEach((lv) => {
+    const list = courses.filter((c) => c.level === lv);
+    unlockedMap[lv] = prevOk;
+    if (list.length)
+      prevOk =
+        prevOk &&
+        list.every((c) => done.includes(c.title)) &&
+        (!(stageTests[track] && stageTests[track][lv]) || done.includes(stageKeyOf(lv)));
+  });
   topDown.forEach((level) => {
     const list = courses.filter((c) => c.level === level);
     if (list.length === 0) return;
+    if (!unlockedMap[level]) {
+      items.push({ type: "level", key: "lv-" + level, label: level, y, locked: true });
+      y += 62 + 14;
+      return;
+    }
     items.push({ type: "level", key: "lv-" + level, label: level, y });
     y += 62;
     list.forEach((c, i) => {
       items.push({ type: "course", key: c.title, c, level, side: i % 2 === 0 ? "left" : "right", y });
       y += ROW;
     });
+    const st = stageTests[track] && stageTests[track][level];
+    if (st) {
+      items.push({
+        type: "stage",
+        key: "st-" + level,
+        level,
+        y,
+        passed: done.includes(stageKeyOf(level)),
+        ready: list.every((c) => done.includes(c.title)),
+      });
+      y += 78;
+    }
     y += 14;
   });
   const H = y + 90;
@@ -95,8 +191,8 @@ function CourseTree({ courses, onPick, done }) {
     <div className="tree-graph" style={{ height: H }}>
       <svg className="tree-svg" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true">
         {/* الجذع */}
-        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-glow" style={{ stroke: "#a58bdc", strokeWidth: 14, opacity: 0.35, fill: "none" }} />
-        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-core" style={{ stroke: "#ede7f8", strokeWidth: 3, fill: "none" }} />
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-glow" style={{ stroke: "#a58bdc", strokeWidth: 26, opacity: 0.3, fill: "none" }} />
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-core" style={{ stroke: "#ede7f8", strokeWidth: 7, fill: "none" }} />
         <polygon points={`50,6 57,30 43,30`} className="trunk-arrow" style={{ fill: "#ede7f8" }} />
         {/* الفروع */}
         {items
@@ -107,7 +203,7 @@ function CourseTree({ courses, onPick, done }) {
               it.side === "left"
                 ? `M50 ${ty + 40} C 50 ${ty + 10}, 46 ${ty}, 44 ${ty}`
                 : `M50 ${ty + 40} C 50 ${ty + 10}, 54 ${ty}, 56 ${ty}`;
-            return <path key={"br-" + it.key} d={d} className="branch-glow" style={{ fill: "none", stroke: "#a58bdc", strokeWidth: 4, strokeLinecap: "round" }} />;
+            return <path key={"br-" + it.key} d={d} className="branch-glow" style={{ fill: "none", stroke: "#a58bdc", strokeWidth: 9, strokeLinecap: "round" }} />;
           })}
       </svg>
 
@@ -115,22 +211,41 @@ function CourseTree({ courses, onPick, done }) {
       <div className="tree-anchor bottom-anchor" style={{ top: H - 48 }}>بداية المسار</div>
 
       {items.map((it) =>
-        it.type === "level" ? (
-          <div key={it.key} className="tree-level-name tree-level-abs" style={{ top: it.y }}>
-            {it.label}
+        it.type === "stage" ? (
+          <button
+            key={it.key}
+            type="button"
+            className={"stage-btn" + (it.passed ? " passed" : "") + (!it.ready ? " locked" : "")}
+            style={{ top: it.y }}
+            onClick={() => {
+              if (it.ready && !it.passed) {
+                onPick({ title: stageKeyOf(it.level), label: "اختبار مرحلة " + it.level, test: stageTests[track][it.level] });
+              }
+            }}
+          >
+            {it.passed ? "✓ اختبار " + it.level : it.ready ? "🎯 اختبار " + it.level : "🔒 اختبار " + it.level}
+          </button>
+        ) : it.type === "level" ? (
+          <div
+            key={it.key}
+            className={"tree-level-name tree-level-abs" + (it.locked ? " locked" : "")}
+            style={{ top: it.y }}
+          >
+            {it.locked ? "🔒 " : ""}{it.label}
+            {it.locked && <span className="locked-note">اجتاز مرحلة قبلها عشان تفتحها</span>}
           </div>
         ) : (
           <div
             key={it.key}
-            className={"tree-node-abs " + it.side + (done.includes(it.c.title) ? " is-done" : "")}
+            className={"tree-node-abs " + it.side + (done.includes(it.c.title) ? " is-done" : "") + (lockedSet.has(it.c.title) ? " is-locked" : "")}
             style={{ top: it.y }}
           >
             <button
               type="button"
               className={"tree-course" + (done.includes(it.c.title) ? " is-done" : "")}
-              onClick={() => onPick(it.c)}
+              onClick={() => { if (!lockedSet.has(it.c.title)) onPick(it.c); }}
             >
-              <span className="tree-icon">{TREE_ICONS[it.level] || "📘"}</span>
+              <span className="tree-icon">{lockedSet.has(it.c.title) ? "🔒" : TREE_ICONS[it.level] || "📘"}</span>
               <span className="tree-title">
                 {done.includes(it.c.title) ? "✓ " : ""}{it.c.title}
               </span>
@@ -469,21 +584,23 @@ function PageView({ route, done, onPick, user }) {
   if (!title) return null;
   return (
     <section className="page">
-      {back}
+      <div className="page-topbar">
+        {back}
+        <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
+      </div>
       <h2>{title}</h2>
       <div className="track-layout">
         <div className="track-main">
           <TrackProgress courses={tracks[route]} done={done} />
           {tracks[route] && tracks[route].length > 0 &&
             tracks[route].every((c) => done.includes(c.title)) && <Celebration />}
-          <CourseTree courses={tracks[route]} onPick={onPick} done={done} />
+          <CourseTree courses={tracks[route]} onPick={onPick} done={done} track={route} />
           <div className="track-bottom">
             <div>{route === "programming" && <CodeCard />}</div>
             <div><TelegramCard /></div>
           </div>
         </div>
         <aside className="track-side">
-          <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
         </aside>
       </div>
     </section>
@@ -605,7 +722,9 @@ export default function App() {
           <a href="#learning">الكورسات</a>
           <a href="#resources">الموارد المجانية</a>
           <a href="#/leaderboard">المتصدرين</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
+          {!isPage && (
+  <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
+          )}
         </nav>
       </header>
 
@@ -721,7 +840,7 @@ export default function App() {
         </>
       )}
 
-      <Modal open={dialog === "course"} onClose={close} title={course ? course.title : ""}>
+      <Modal open={dialog === "course"} onClose={close} title={course ? course.label || course.title : ""}>
         {course && (
           <div className="course-card">
             <p className="course-level">{course.level}</p>
@@ -732,26 +851,18 @@ export default function App() {
                 <p>{course.exercise}</p>
               </>
             )}
-            {pending === course.title && !done.includes(course.title) && (
+            {pending === course.title && !done.includes(course.title) && course.test && course.test.length > 0 && (
               <p className="forum-meta">رجعت من الكورس؟ اضغط علّم كمكتمل لو خلصته.</p>
             )}
-            <button type="button" className={"quiz-btn" + (done.includes(course.title) ? " ghost" : "")} onClick={() => toggleDone(course.title)}>
-              {done.includes(course.title) ? "✓ تم الإنهاء (اضغط للتراجع)" : "علّم كمكتمل"}
-            </button>
-            <a
-              className="btn-course"
-              href={course.href}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => {
-                try {
-                  localStorage.setItem("afaq-pending", course.title);
-                } catch (e) {}
-                setPending(course.title);
-              }}
-            >
-              افتح الكورس
-            </a>
+            {course.test && course.test.length > 0 && !done.includes(course.title) ? (
+              <CourseQuiz course={course} onPass={() => toggleDone(course.title)} />
+            ) : done.includes(course.title) ? (
+              <button type="button" className="quiz-btn ghost" onClick={() => toggleDone(course.title)}>
+                ✓ تم الإنهاء (اضغط للتراجع)
+              </button>
+            ) : (
+              <p className="forum-meta">الاختبار قريباً 🧪 لازم تنجحي فيه عشان الكورس اللي بعده يتفتح.</p>
+            )}
             <p className="forum-meta">بعد ما تخلّص الكورس، ارجع واضغط علّم كمكتمل.</p>
             <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
           </div>
