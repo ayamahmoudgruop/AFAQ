@@ -1769,3 +1769,51 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   .tree-node-abs .tree-course { font-size: 0.66rem; padding: 4px 4px; }
   .tree-node-abs .tree-icon { width: 30px; height: 30px; font-size: 0.85rem; }
 }
+
+/* الكروت داخل الشجرة (الشكل المرجعي): داكنة مع توهج */
+.tree-node-abs .tree-course {
+  background: rgba(44, 32, 86, 0.92);
+  color: #ede7f8;
+  border: 2px solid #a58bdc;
+  border-radius: 16px;
+  box-shadow: 0 0 14px rgba(165, 139, 220, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.tree-node-abs.is-done .tree-course,
+.tree-node-abs .tree-course.is-done {
+  background: linear-gradient(135deg, #c4b5f5, #a58bdc);
+  color: #1c1438;
+  border-color: #ede7f8;
+  box-shadow: 0 0 22px rgba(196, 181, 245, 0.95);
+}
+.tree-node-abs .tree-next {
+  position: static;
+  margin: 0;
+  align-self: center;
+}
+.tree-node-abs .tree-pct { font-size: 0.75rem; color: #c4b5f5; }
+.tree-node-abs .tree-bar { background: rgba(196, 181, 245, 0.25); }
+
+
+/* الشجرة في نص عمودها وأقصر */
+.tree-graph { margin: 0 auto; max-width: 420px; }
+
+
+/* تحت الشجرة: كارت الكود على الشمال وتليجرام على اليمين */
+.track-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+  margin-top: 14px;
+}
+.track-bottom .side-card { height: 100%; }
+@media (max-width: 480px) {
+  .track-bottom { gap: 6px; }
+  .track-bottom .side-card { padding: 8px; }
+}
