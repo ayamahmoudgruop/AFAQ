@@ -71,36 +71,78 @@ function CourseTree({ courses, onPick, done }) {
   }
   const ordered = LEVELS.flatMap((level) => courses.filter((c) => c.level === level));
   const next = ordered.find((c) => !done.includes(c.title));
-  // من فوق لتحت: متقدم في الأول والمبتدئ في الآخر، والمسار بيبدأ من تحت
+  // من فوق لتحت: المتقدم فوق والمبتدئ تحت، والمسار بيبدأ من تحت
   const topDown = [...LEVELS].reverse();
+
+  // نحسب مكان كل عنصر بالترتيب (المستويات والكورسات)
+  const ROW = 96;
+  const items = [];
+  let y = 70;
+  topDown.forEach((level) => {
+    const list = courses.filter((c) => c.level === level);
+    if (list.length === 0) return;
+    items.push({ type: "level", key: "lv-" + level, label: level, y });
+    y += 58;
+    list.forEach((c, i) => {
+      items.push({ type: "course", key: c.title, c, level, side: i % 2 === 0 ? "left" : "right", y });
+      y += ROW;
+    });
+    y += 14;
+  });
+  const H = y + 90;
+
   return (
-    <div className="tree">
-      <div className="tree-anchor">التفوق</div>
-      {topDown.map((level) => {
-        const list = courses.filter((c) => c.level === level);
-        if (list.length === 0) return null;
-        return (
-          <div className="tree-level" key={level}>
-            <div className="tree-level-name">{level}</div>
-            {list.map((c, i) => {
-              const isDone = done.includes(c.title);
-              return (
-                <div
-                  className={"tree-node " + (i % 2 === 0 ? "left" : "right") + (isDone ? " is-done" : "")}
-                  key={c.title}
-                >
-                  <button type="button" className={"tree-course" + (isDone ? " is-done" : "")} onClick={() => onPick(c)}>
-                    <span className="tree-icon">{TREE_ICONS[level] || "📘"}</span>
-                    {isDone ? "✓ " : ""}{c.title}
-                    {next && next.title === c.title && <span className="tree-next">التالي</span>}
-                  </button>
-                </div>
-              );
-            })}
+    <div className="tree-graph" style={{ height: H }}>
+      <svg className="tree-svg" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        {/* الجذع */}
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-glow" />
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-core" />
+        <polygon points={`50,6 57,30 43,30`} className="trunk-arrow" />
+        {/* الفروع */}
+        {items
+          .filter((it) => it.type === "course")
+          .map((it) => {
+            const ty = it.y + 30;
+            const d =
+              it.side === "left"
+                ? `M50 ${ty + 40} C 50 ${ty + 10}, 46 ${ty}, 44 ${ty}`
+                : `M50 ${ty + 40} C 50 ${ty + 10}, 54 ${ty}, 56 ${ty}`;
+            return <path key={"br-" + it.key} d={d} className="branch-glow" />;
+          })}
+      </svg>
+
+      <div className="tree-anchor top-anchor">التفوق</div>
+      <div className="tree-anchor bottom-anchor" style={{ top: H - 48 }}>بداية المسار</div>
+
+      {items.map((it) =>
+        it.type === "level" ? (
+          <div key={it.key} className="tree-level-name tree-level-abs" style={{ top: it.y }}>
+            {it.label}
           </div>
-        );
-      })}
-      <div className="tree-anchor bottom">بداية المسار</div>
+        ) : (
+          <div
+            key={it.key}
+            className={"tree-node-abs " + it.side + (done.includes(it.c.title) ? " is-done" : "")}
+            style={{ top: it.y }}
+          >
+            <button
+              type="button"
+              className={"tree-course" + (done.includes(it.c.title) ? " is-done" : "")}
+              onClick={() => onPick(it.c)}
+            >
+              <span className="tree-icon">{TREE_ICONS[it.level] || "📘"}</span>
+              <span className="tree-title">
+                {done.includes(it.c.title) ? "✓ " : ""}{it.c.title}
+              </span>
+              <span className="tree-bar">
+                <span style={{ width: done.includes(it.c.title) ? "100%" : "0%" }} />
+              </span>
+              <span className="tree-pct">{done.includes(it.c.title) ? "100%" : "0%"}</span>
+              {next && next.title === it.c.title && <span className="tree-next">التالي</span>}
+            </button>
+          </div>
+        )
+      )}
     </div>
   );
 }
@@ -241,6 +283,19 @@ function NotificationsBox({ user }) {
           💬 ردّ جديد على: {m.title} ({m.unseen})
         </a>
       ))}
+    </div>
+  );
+}
+
+/* كارت الكود: الكود والنتيجة بيظهروا بس لما تضغطي عليه */
+function CodeCard() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="side-card code-card">
+      <button type="button" className="code-card-btn" onClick={() => setOpen(!open)}>
+        🧪 جرّب الكود بنفسك {open ? "▲" : "▼"}
+      </button>
+      {open && <CodeBox />}
     </div>
   );
 }
@@ -426,7 +481,7 @@ function PageView({ route, done, onPick, user }) {
         </div>
         <aside className="track-side">
           <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
-          {route === "programming" && <CodeBox />}
+          {route === "programming" && <CodeCard />}
         </aside>
       </div>
     </section>
