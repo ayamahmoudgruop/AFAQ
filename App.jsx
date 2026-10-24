@@ -75,14 +75,14 @@ function CourseTree({ courses, onPick, done }) {
   const topDown = [...LEVELS].reverse();
 
   // نحسب مكان كل عنصر بالترتيب (المستويات والكورسات)
-  const ROW = 96;
+  const ROW = 138;
   const items = [];
   let y = 70;
   topDown.forEach((level) => {
     const list = courses.filter((c) => c.level === level);
     if (list.length === 0) return;
     items.push({ type: "level", key: "lv-" + level, label: level, y });
-    y += 58;
+    y += 74;
     list.forEach((c, i) => {
       items.push({ type: "course", key: c.title, c, level, side: i % 2 === 0 ? "left" : "right", y });
       y += ROW;
@@ -95,9 +95,9 @@ function CourseTree({ courses, onPick, done }) {
     <div className="tree-graph" style={{ height: H }}>
       <svg className="tree-svg" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true">
         {/* الجذع */}
-        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-glow" />
-        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-core" />
-        <polygon points={`50,6 57,30 43,30`} className="trunk-arrow" />
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-glow" style={{ stroke: "#a58bdc", strokeWidth: 14, opacity: 0.35, fill: "none" }} />
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-core" style={{ stroke: "#ede7f8", strokeWidth: 3, fill: "none" }} />
+        <polygon points={`50,6 57,30 43,30`} className="trunk-arrow" style={{ fill: "#ede7f8" }} />
         {/* الفروع */}
         {items
           .filter((it) => it.type === "course")
@@ -107,7 +107,7 @@ function CourseTree({ courses, onPick, done }) {
               it.side === "left"
                 ? `M50 ${ty + 40} C 50 ${ty + 10}, 46 ${ty}, 44 ${ty}`
                 : `M50 ${ty + 40} C 50 ${ty + 10}, 54 ${ty}, 56 ${ty}`;
-            return <path key={"br-" + it.key} d={d} className="branch-glow" />;
+            return <path key={"br-" + it.key} d={d} className="branch-glow" style={{ fill: "none", stroke: "#a58bdc", strokeWidth: 4, strokeLinecap: "round" }} />;
           })}
       </svg>
 
