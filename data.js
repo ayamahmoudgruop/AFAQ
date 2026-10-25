@@ -138,6 +138,8 @@ export const tracks = {
   marketing: [],
   design: [],
   data: [],
+  ai: [],
+  cyber: [],
 };
 
 // المصادر: منصات التدريب العملي والبودكاست

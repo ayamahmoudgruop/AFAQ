@@ -12,9 +12,11 @@ import { db } from "./firebase.js";
 const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
 const TRACK_TITLES = {
   programming: "البرمجة",
-  marketing: "الماركتنج",
+  marketing: "التسويق",
   design: "التصميم",
-  data: "البيانات والذكاء الاصطناعي",
+  data: "تحليل البيانات",
+  ai: "الذكاء الاصطناعي",
+  cyber: "الأمن السيبراني",
 };
 
 /* أيقونة: لو الصورة مش موجودة يظهر الإيموجي بدلها */
@@ -142,7 +144,7 @@ function CourseTree({ courses, onPick, done, track }) {
   const topDown = [...LEVELS].reverse();
 
   // نحسب مكان كل عنصر بالترتيب (المستويات والكورسات)
-  const ROW = 124;
+  const ROW = 104;
   const items = [];
   let y = 70;
   // المرحلة بتتفتح لما كل كورسات المرحلة اللي قبلها تخلص (بالاختبار)
@@ -228,6 +230,7 @@ function CourseTree({ courses, onPick, done, track }) {
         ) : it.type === "level" ? (
           <div
             key={it.key}
+            id={"lv-" + it.label}
             className={"tree-level-name tree-level-abs" + (it.locked ? " locked" : "")}
             style={{ top: it.y }}
           >
@@ -504,8 +507,177 @@ function Leaderboard({ user }) {
   );
 }
 
+/* هيدر القسم: ألوان الغروب (بتكمل الهيرو) + النقاط + الارتفاع + المستويات */
+function SectionHeader({ title, courses, done, onSelect }) {
+  const list = courses || [];
+  const total = list.length;
+  const finished = list.filter((c) => done.includes(c.title)).length;
+  const pct = total ? Math.round((finished / total) * 100) : 0;
+  const xp = finished * 10;
+  const levels = LEVELS.map((lv, i) => {
+    const inLevel = list.filter((c) => c.level === lv);
+    const prev = i === 0 ? [] : list.filter((c) => c.level === LEVELS[i - 1]);
+    const open = i === 0 || (prev.length > 0 && prev.every((c) => done.includes(c.title)));
+    return { lv, open, has: inLevel.length > 0 };
+  });
+  const goTo = (lv) => {
+    if (onSelect) onSelect(lv);
+  };
+  return (
+    <div className="sec-header">
+      <span className="sec-kicker">رحلة الصعود لقمة آفاق</span>
+      <h2 className="sec-title">{title}</h2>
+      <div className="sec-stats">
+        <div className="sec-stat"><span>النقاط</span><strong>{xp} XP</strong></div>
+        <div className="sec-stat"><span>الارتفاع</span><strong>{pct}m</strong></div>
+        <button type="button" className="sec-sound" disabled title="قريباً">🔊</button>
+      </div>
+      <div className="sec-levels">
+        {levels.map((l, i) => (
+          <button
+            key={l.lv}
+            type="button"
+            className={"sec-level" + (l.open ? "" : " locked") + (!l.has ? " empty" : "")}
+            disabled={!l.open || !l.has}
+            onClick={() => goTo(l.lv)}
+          >
+            <span className="sec-level-num">{i + 1}</span>
+            <span>{l.lv}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===== الجبل: المسار + فقاعات المستويات + فقاعات الكورسات + الشخصية ===== */
+const PATH = [
+  { x: 16, y: 88 },
+  { x: 40, y: 62 },
+  { x: 68, y: 36 },
+  { x: 84, y: 12 },
+];
+const mix = (p, q, f) => ({ x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f });
+
+function MountainView({ courses, done, onPick, level, onLevel, climber, onClimber }) {
+  const levelsInOrder = LEVELS.filter((lv) => (courses || []).some((c) => c.level === lv));
+  const idx = Math.max(0, LEVELS.indexOf(level));
+  const isOpenLevel = (i) => {
+    if (i === 0) return true;
+    const prev = (courses || []).filter((c) => c.level === LEVELS[i - 1]);
+    return prev.length > 0 && prev.every((c) => done.includes(c.title));
+  };
+  const inLevel = (courses || []).filter((c) => c.level === level);
+  const ordered = LEVELS.flatMap((lv) => (courses || []).filter((c) => c.level === lv));
+  const locked = new Set();
+  ordered.forEach((c, i) => {
+    if (i > 0 && !done.includes(ordered[i - 1].title) && !done.includes(c.title)) locked.add(c.title);
+  });
+  const segFrom = PATH[idx];
+  const segTo = PATH[idx + 1] || PATH[idx];
+  const n = inLevel.length;
+  const courseAt = (j) => {
+    const p = mix(segFrom, segTo, (j + 1) / (n + 1));
+    return { x: p.x + (j % 2 === 0 ? -5 : 5), y: p.y };
+  };
+  const doneHere = inLevel.filter((c) => done.includes(c.title)).length;
+  const climberPos = doneHere === 0 ? segFrom : courseAt(Math.min(doneHere, n) - 1);
+
+  return (
+    <div className="mtn-wrap">
+      <img className="mtn-bg" src="/mountain.jpg" alt="" />
+      <svg className="mtn-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points={PATH.map((p) => p.x + "," + p.y).join(" ")} className="mtn-path-glow" />
+        <polyline points={PATH.map((p) => p.x + "," + p.y).join(" ")} className="mtn-path-line" />
+      </svg>
+
+      {PATH.slice(0, 3).map((p, i) => {
+        const open = isOpenLevel(i);
+        return (
+          <button
+            key={LEVELS[i]}
+            type="button"
+            className={"mtn-level" + (i === idx ? " active" : "") + (open ? "" : " locked")}
+            style={{ left: p.x + "%", top: p.y + "%" }}
+            disabled={!open}
+            onClick={() => onLevel(LEVELS[i])}
+          >
+            <span className="mtn-level-num">{i + 1}</span>
+            <span className="mtn-level-name">{LEVELS[i]}</span>
+          </button>
+        );
+      })}
+
+      <div className="mtn-summit" style={{ left: PATH[3].x + "%", top: PATH[3].y + "%" }}>القمة</div>
+
+      {inLevel.map((c, j) => {
+        const pos = courseAt(j);
+        const isDone = done.includes(c.title);
+        const isLocked = locked.has(c.title);
+        return (
+          <button
+            key={c.title}
+            type="button"
+            className={"mtn-course" + (isDone ? " done" : "") + (isLocked ? " locked" : "")}
+            style={{ left: pos.x + "%", top: pos.y + "%" }}
+            onClick={() => {
+              if (!isLocked) onPick(c);
+            }}
+            title={c.title}
+          >
+            <span className="mtn-bubble">{isDone ? "✓" : isLocked ? "🔒" : "◉"}</span>
+            <span className="mtn-label">{c.title}</span>
+          </button>
+        );
+      })}
+
+      <img
+        className="mtn-climber"
+        src={climber === "boy" ? "/climber-boy.png" : "/climber-girl.png"}
+        alt=""
+        style={{ left: climberPos.x + "%", top: climberPos.y + "%" }}
+      />
+
+      <button
+        type="button"
+        className="mtn-switch"
+        onClick={() => onClimber(climber === "boy" ? "girl" : "boy")}
+      >
+        {climber === "boy" ? "🧗 ولد (غيّري)" : "🧗 بنت (غيّري)"}
+      </button>
+    </div>
+  );
+}
+
 /* صفحة كاملة لكل مسار / للغات / للمنتدى */
 function PageView({ route, done, onPick, user }) {
+  const [activeLevel, setActiveLevel] = useState(LEVELS[0]);
+  const [climber, setClimber] = useState(() => {
+    try {
+      return localStorage.getItem("afaq-climber") || "girl";
+    } catch (e) {
+      return "girl";
+    }
+  });
+  const [chosen, setChosen] = useState(() => {
+    try {
+      return localStorage.getItem("afaq-climber-chosen") === "1";
+    } catch (e) {
+      return false;
+    }
+  });
+  function startJourney() {
+    try {
+      localStorage.setItem("afaq-climber-chosen", "1");
+    } catch (e) {}
+    setChosen(true);
+  }
+  function chooseClimber(v) {
+    setClimber(v);
+    try {
+      localStorage.setItem("afaq-climber", v);
+    } catch (e) {}
+  }
   const back = (
     <a href="#" className="page-back" onClick={() => window.scrollTo(0, 0)}>
       الرجوع للرئيسية
@@ -588,13 +760,51 @@ function PageView({ route, done, onPick, user }) {
         {back}
         <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
       </div>
-      <h2>{title}</h2>
+      <SectionHeader title={title} courses={tracks[route]} done={done} onSelect={setActiveLevel} />
       <div className="track-layout">
         <div className="track-main">
           <TrackProgress courses={tracks[route]} done={done} />
           {tracks[route] && tracks[route].length > 0 &&
             tracks[route].every((c) => done.includes(c.title)) && <Celebration />}
-          <CourseTree courses={tracks[route]} onPick={onPick} done={done} track={route} />
+          {!chosen && (
+            <div className="climber-intro">
+              <h3>رحلتك في آفاق تبدأ من هنا ✨</h3>
+              <p>كل رحلة عظيمة بتبدأ بخطوة، والنهارده دي رحلتك أنت!</p>
+              <p>اختار الشخصية اللي تحب إنها ترافقك في رحلتك التعليمية.</p>
+              <div className="climber-choices">
+                <button
+                  type="button"
+                  className={"climber-choice" + (climber === "girl" ? " selected" : "")}
+                  onClick={() => chooseClimber("girl")}
+                >
+                  <span className="climber-emoji">👩</span>
+                  <span>شخصية البنت</span>
+                </button>
+                <button
+                  type="button"
+                  className={"climber-choice" + (climber === "boy" ? " selected" : "")}
+                  onClick={() => chooseClimber("boy")}
+                >
+                  <span className="climber-emoji">🧑</span>
+                  <span>شخصية الولد</span>
+                </button>
+              </div>
+              <p className="climber-note">لا تقلق، تقدر تغيّر اختيارك في أي وقت.</p>
+              <button type="button" className="climber-start" onClick={startJourney}>
+                يلا نبدأ رحلتنا 🚀
+              </button>
+            </div>
+          )}
+
+          <MountainView
+            courses={tracks[route]}
+            done={done}
+            onPick={onPick}
+            level={activeLevel}
+            onLevel={setActiveLevel}
+            climber={climber}
+            onClimber={chooseClimber}
+          />
           <div className="track-bottom">
             <div>{route === "programming" && <CodeCard />}</div>
             <div><TelegramCard /></div>
@@ -721,7 +931,6 @@ export default function App() {
           <a href="#" className="active">الرئيسية</a>
           <a href="#learning">الكورسات</a>
           <a href="#resources">الموارد المجانية</a>
-          <a href="#/leaderboard">المتصدرين</a>
           {!isPage && (
   <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
           )}
@@ -768,8 +977,8 @@ export default function App() {
           </div>
 
           <div className="card clickable" id="card-marketing" onClick={() => go("marketing")}>
-            <Icon color="pink" src="/icon-marketing.png" alt="ماركتنج" fallback="📣" />
-            <h3>ماركتنج</h3>
+            <Icon color="pink" src="/icon-marketing.png" alt="التسويق" fallback="📣" />
+            <h3>التسويق</h3>
             <p>اكتسب مهارات التسويق الرقمي<br />وابني علامتك الخاصة.</p>
           </div>
 
@@ -780,9 +989,21 @@ export default function App() {
           </div>
 
           <div className="card clickable" id="card-data" onClick={() => go("data")}>
-            <Icon color="teal" src="/icon-data.png" alt="البيانات والذكاء الاصطناعي" fallback="📊" />
-            <h3>البيانات والذكاء الاصطناعي</h3>
-            <p>ابدأ رحلتك مع البيانات<br />وتعلم كيف تستفيد من الذكاء الاصطناعي.</p>
+            <Icon color="teal" src="/icon-data.png" alt="تحليل البيانات" fallback="📊" />
+            <h3>تحليل البيانات</h3>
+            <p>ابدأ رحلتك مع البيانات<br />وحوّلها إلى قرارات واضحة.</p>
+          </div>
+
+          <div className="card clickable" id="card-ai" onClick={() => go("ai")}>
+            <Icon color="purple" src="/icon-ai.png" alt="الذكاء الاصطناعي" fallback="🤖" />
+            <h3>الذكاء الاصطناعي</h3>
+            <p>تعرّف على الذكاء الاصطناعي<br />واستخدمه في شغلك ودراستك.</p>
+          </div>
+
+          <div className="card clickable" id="card-cyber" onClick={() => go("cyber")}>
+            <Icon color="gray" src="/icon-cyber.png" alt="الأمن السيبراني" fallback="🛡️" />
+            <h3>الأمن السيبراني</h3>
+            <p>احمِ نفسك وبياناتك<br />وتعلم أساسيات الحماية الرقمية.</p>
           </div>
         </div>
       </section>

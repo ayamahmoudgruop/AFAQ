@@ -295,7 +295,7 @@ export default function Forum() {
             className={"forum-chip" + (filter === c ? " active" : "")}
             onClick={() => setFilter(c)}
           >
-            {c === "المتصدرين" ? "🏆 المتصدرين" : c}
+            {c === "المتصدرين" ? "🏆 لوحة الشرف" : c}
           </button>
         ))}
       </div>
