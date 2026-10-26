@@ -2155,3 +2155,74 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 @media (min-width: 900px) {
   .page-header-actions .acc-wrap .side-card { width: 340px; }
 }
+
+/* ===== تعديل كبسولات الكورسات والشجرة لتطابق الشكل المطلوب ===== */
+.tree-node-abs .tree-course {
+  background: rgba(44, 32, 86, 0.92);
+  color: #ede7f8;
+  border: 2px solid #a58bdc;
+  border-radius: 24px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: right;
+  box-shadow: 0 0 16px rgba(165, 139, 220, 0.4);
+}
+
+.tree-node-abs.is-done .tree-course,
+.tree-node-abs .tree-course.is-done {
+  background: #c4b5f5;
+  color: #1c1438;
+  border-color: #ffffff;
+}
+
+/* ترتيب العناصر داخل الكبسولة لتعرض الأيقونة والنص وشريط التقدم بجانب بعضها */
+.tree-node-abs .tree-course {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "title icon" "bar icon" "pct icon";
+  align-items: center;
+  row-gap: 4px;
+}
+
+.tree-node-abs .tree-title { grid-area: title; font-weight: 800; font-size: 0.85rem; }
+.tree-node-abs .tree-icon { grid-area: icon; width: 36px; height: 36px; font-size: 1rem; }
+.tree-node-abs .tree-bar { grid-area: bar; width: 100%; }
+.tree-node-abs .tree-pct, .tree-node-abs .tree-next { grid-area: pct; }
+
+/* ===== إصلاح قائمة الثلاث شرط (☰) لتظهر في مكانها بدون إزاحة ===== */
+.page-header-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-header-actions .acc-wrap {
+  position: relative;
+}
+
+.page-header-actions .acc-wrap .side-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 300px;
+  max-height: 75vh;
+  overflow-y: auto;
+  z-index: 999;
+  background: #ffffff;
+  border: 1px solid #a58bdc;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(32, 21, 57, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* تنسيق عناصر القائمة لتظهر تحت بعضها بترتيب سليم */
+.page-header-actions .acc-wrap .side-card * {
+  text-align: right;
+}
