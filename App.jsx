@@ -423,7 +423,7 @@ function StudentPanel({ track, courses, done, user }) {
   const [open, setOpen] = useState(false);
   const [sub, setSub] = useState(null); // null | "notif" | "badges"
   const badges = earnedBadges(track, courses, done);
-  const trackName = (languages.find((l) => l.key === track) || {}).title || TRACK_TITLES[track] || "";
+  const trackName = languages.find((l) => l.key === track) ? "اللغات" : TRACK_TITLES[track] || "";
 
   return (
     <div className="acc-wrap">
@@ -627,26 +627,27 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
 
       <div className="mtn-summit" style={{ left: PATH[3].x + "%", top: PATH[3].y + "%" }}>القمة</div>
 
-      {shown === level && inLevel.map((c, j) => {
-        const pos = courseAt(j);
-        const isDone = done.includes(c.title);
-        const isLocked = locked.has(c.title);
-        return (
-          <button
-            key={c.title}
-            type="button"
-            className={"mtn-course" + (isDone ? " done" : "") + (isLocked ? " locked" : "") + (c.title === nextTitle ? " next" : "")}
-            style={{ left: pos.x + "%", top: pos.y + "%" }}
-            onClick={() => {
-              if (!isLocked) onPick(c);
-            }}
-            title={c.title}
-          >
-            <span className="mtn-bubble">{isDone ? "✓" : isLocked ? "🔒" : "◉"}</span>
-            <span className="mtn-label">{c.title}</span>
-          </button>
-        );
-      })}
+      {shown === level && (
+        <div className="mtn-panel" style={{ left: climberPos.x <= 50 ? "46%" : "2%" }}>
+          {inLevel.map((c) => {
+            const isDone = done.includes(c.title);
+            const isLocked = locked.has(c.title);
+            return (
+              <button
+                key={c.title}
+                type="button"
+                className={"mtn-capsule" + (isDone ? " done" : "") + (isLocked ? " locked" : "") + (c.title === nextTitle ? " next" : "")}
+                onClick={() => {
+                  if (!isLocked) onPick(c);
+                }}
+              >
+                <span className="mtn-capsule-icon">{isDone ? "✓" : isLocked ? "🔒" : "◉"}</span>
+                <span className="mtn-capsule-text">{c.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <img
         className="mtn-climber"
@@ -779,7 +780,7 @@ function PageView({ route, done, onPick, user }) {
   }
 
   const lang = languages.find((l) => l.key === route);
-  const title = lang ? lang.title : TRACK_TITLES[route];
+  const title = lang ? "اللغات" : TRACK_TITLES[route];
   if (!title) return null;
   return (
     <section className="page">

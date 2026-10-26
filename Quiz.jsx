@@ -6,6 +6,8 @@ import { loadUserData, saveUserData } from "./sync.js";
 
 // كل نتيجة وقسمها في الصفحة (لازم تطابق id الكارت في App.jsx)
 const SECTION_IDS = {
+  ai: "ai",
+  cyber: "cyber",
   programming: "programming",
   marketing: "marketing",
   languages: "languages",
@@ -17,19 +19,19 @@ const TRACK_KEYS = ["programming", "marketing", "languages", "design", "data"];
 
 // سؤال الوقت: آخر سؤال في الاختبار
 const TIME_QUESTION = {
-  q: "كم ساعة يوميًا يمكن تخصيصها للتعلم؟",
+  q: "ما هي المدة الزمنية التي يمكنك تخصيصها للتعلم اليومي؟",
   a: [
-    ["time1", "حتى ساعة"],
-    ["time2", "من ساعة لساعتين"],
-    ["time3", "أكثر من ساعتين"],
+    ["time1", "خطة المحارب (ساعة واحدة يومياً): تناسب أصحاب الجدول المزدحم لضمان استمرارية هادئة."],
+    ["time2", "خطة المتوازن (من ساعتين إلى 3 ساعات يومياً): تتيح تقدماً ثابتاً وجاداً بمعدل متوسط."],
+    ["time3", "خطة المكثف (4 ساعات فأكثر يومياً): لمن يفرغ نفسه للتعلم ويرغب في إنجاز المسار سريعاً."],
   ],
 };
 
 // الخطة حسب الوقت المختار
 const PLANS = {
-  time1: "خطوات قصيرة، كل مرحلة تتقسم لأجزاء صغيرة، ومدة المرحلة حوالي أسبوعين.",
-  time2: "مرحلة كل أسبوع، ومع كل مرحلة تمرين عملي.",
-  time3: "مرحلة كل 3 إلى 4 أيام، ومشروع صغير بعد كل مرحلة.",
+  time1: "خطة المحارب: ساعة يومياً، خطوات هادئة ومستمرة.",
+  time2: "خطة المتوازن: من ساعتين لـ3 ساعات يومياً، تقدم ثابت وجاد.",
+  time3: "خطة المكثف: 4 ساعات فأكثر يومياً، إنجاز المسار بأسرع شكل.",
 };
 
 const ALL_QUESTIONS = [...questions, TIME_QUESTION];
@@ -192,7 +194,7 @@ export default function Quiz({ user }) {
     <section className="quiz-section" id="quiz-section">
       <div className="quiz-card" id="quiz">
         <h2>اكتشف مسارك</h2>
-        <p className="quiz-subtitle">مش عارف تبدأ منين؟ 9 أسئلة صغيرة هيوضحولك طريقك.</p>
+        <p className="quiz-subtitle">مش عارف تبدأ منين؟ 7 أسئلة قصيرة هتوضحلك طريقك.</p>
         <input type="text" id="userName" placeholder="اكتب اسمك" value={name} onChange={(e) => setName(e.target.value)} />
 
         {best === null && current === 0 && !name.trim() && (

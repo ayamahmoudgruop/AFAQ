@@ -2156,111 +2156,90 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   .page-header-actions .acc-wrap .side-card { width: 340px; }
 }
 
-/* ===== تعديل كبسولات الكورسات والشجرة لتطابق الشكل المطلوب ===== */
-.tree-node-abs .tree-course {
-  background: rgba(44, 32, 86, 0.92);
-  color: #ede7f8;
-  border: 2px solid #a58bdc;
-  border-radius: 24px;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  text-align: right;
-  box-shadow: 0 0 16px rgba(165, 139, 220, 0.4);
-}
-
-.tree-node-abs.is-done .tree-course,
-.tree-node-abs .tree-course.is-done {
-  background: #c4b5f5;
-  color: #1c1438;
-  border-color: #ffffff;
-}
-
-/* ترتيب العناصر داخل الكبسولة لتعرض الأيقونة والنص وشريط التقدم بجانب بعضها */
-.tree-node-abs .tree-course {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: "title icon" "bar icon" "pct icon";
-  align-items: center;
-  row-gap: 4px;
-}
-
-.tree-node-abs .tree-title { grid-area: title; font-weight: 800; font-size: 0.85rem; }
-.tree-node-abs .tree-icon { grid-area: icon; width: 36px; height: 36px; font-size: 1rem; }
-.tree-node-abs .tree-bar { grid-area: bar; width: 100%; }
-.tree-node-abs .tree-pct, .tree-node-abs .tree-next { grid-area: pct; }
-
-/* ===== إصلاح قائمة الثلاث شرط (☰) لتظهر في مكانها بدون إزاحة ===== */
-.page-header-actions {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.page-header-actions .acc-wrap {
-  position: relative;
-}
-
+/* ===== لوحة الحساب ☰ (تصليح): تطلع في نص الشاشة تحت الهيدر، مش على الجنب ===== */
 .page-header-actions .acc-wrap .side-card {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 300px;
-  max-height: 75vh;
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(92vw, 360px);
+  max-height: 70vh;
   overflow-y: auto;
-  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 200;
   background: #ffffff;
   border: 1px solid #a58bdc;
   border-radius: 16px;
   padding: 14px;
-  box-shadow: 0 10px 30px rgba(32, 21, 57, 0.3);
+  box-shadow: 0 14px 34px rgba(32, 21, 57, 0.35);
+}
+.page-header-actions .acc-wrap .side-card .acc-menu { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.page-header-actions .acc-wrap .side-card .acc-menu button { width: 100%; display: block; text-align: right; }
+.page-header-actions .acc-wrap .side-card p { margin: 0; }
+.page-header-actions .acc-wrap .side-card .badge-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+
+/* ===== الكورسات كبسولات داخل لوحة جنب الجبل ===== */
+.mtn-climber { height: 22%; }
+.mtn-panel {
+  position: absolute;
+  top: 6%;
+  width: 50%;
+  max-height: 76%;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(32, 21, 57, 0.62);
+  backdrop-filter: blur(6px);
+  z-index: 4;
 }
-
-/* تنسيق عناصر القائمة لتظهر تحت بعضها بترتيب سليم */
-.page-header-actions .acc-wrap .side-card * {
+.mtn-capsule {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #3b2a6b 0%, #5b4aa0 100%);
+  border: 1px solid #a58bdc;
+  color: #ede7f8;
+  font-family: inherit;
+  font-size: 0.75rem;
   text-align: right;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(165, 139, 220, 0.5);
 }
-/* ===== تعديل نهائي لشكل ومكان كبسولات الجبل ===== */
-.mtn-course {
-  position: absolute !important;
-  transform: translate(-50%, -50%) !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  background: #3b2a6b !important;
-  border: 2px solid #a58bdc !important;
-  border-radius: 999px !important;
-  padding: 8px 16px !important;
-  color: #ede7f8 !important;
-  white-space: nowrap !important;
-  box-shadow: 0 4px 15px rgba(32, 21, 57, 0.4) !important;
-  z-index: 50 !important;
+.mtn-capsule-text { flex: 1; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
+.mtn-capsule-icon {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #ede7f8; color: #3b2a6b;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 0.7rem;
 }
-
-.mtn-course .mtn-bubble {
-  width: 28px !important;
-  height: 28px !important;
-  border-radius: 50% !important;
-  background: #ede7f8 !important;
-  color: #3b2a6b !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 0.75rem !important;
-  font-weight: 800 !important;
-  flex-shrink: 0 !important;
+.mtn-capsule.done { background: linear-gradient(135deg, #a58bdc 0%, #c4b5f5 100%); color: #1c1438; }
+.mtn-capsule.done .mtn-capsule-icon { background: #3b2a6b; color: #ede7f8; }
+.mtn-capsule.locked { background: #4a4560; border-color: #6b6380; box-shadow: none; opacity: 0.6; cursor: not-allowed; }
+.mtn-capsule.locked .mtn-capsule-icon { background: #6b6380; color: #ede7f8; }
+.mtn-capsule.next { animation: mtn-bob 2.8s ease-in-out infinite; }
+.mtn-capsule.next::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: mtn-shine 2.8s linear infinite;
+  pointer-events: none;
 }
-
-.mtn-course .mtn-label {
-  color: #ede7f8 !important;
-  font-size: 0.82rem !important;
-  background: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
+@keyframes mtn-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
