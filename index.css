@@ -1929,11 +1929,6 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   .track-bottom .side-card .quiz-btn { font-size: 0.72rem; padding: 6px 8px; width: 100%; text-align: center; }
 }
 
-/* درجة لون الهيرو (مأخوذة من الصورة بالظبط) */
-.hero {
-  background: linear-gradient(135deg, #201539 0%, #211539 60%, #271a3e 100%);
-}
-
 
 /* هيدر القسم: ألوان الغروب (تكمل الهيرو) */
 .sec-header {
@@ -2095,4 +2090,68 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   font-size: 1rem;
   cursor: pointer;
   box-shadow: 0 0 16px rgba(196, 181, 245, 0.6);
+}
+
+/* ===== تعديلات الأقسام: الهيدر، الجبل كامل، الكبسولات ===== */
+.page-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.page-back-top { color: #3b2a6b; font-weight: 700; text-decoration: none; font-size: 0.9rem; }
+.track-layout { grid-template-columns: 1fr !important; }
+.track-side { margin-top: 14px; }
+
+.mtn-path-glow { stroke-width: 6; opacity: 0.6; }
+.mtn-path-line { stroke-width: 2; opacity: 0.95; }
+
+.mtn-course {
+  flex-direction: row; width: auto; border-radius: 999px; padding: 8px 14px; gap: 8px;
+  background: linear-gradient(135deg, #3b2a6b 0%, #5b4aa0 100%);
+  border: 1px solid #a58bdc;
+  box-shadow: 0 0 12px rgba(165, 139, 220, 0.5);
+}
+.mtn-course .mtn-label { background: none; color: #ede7f8; font-size: 0.78rem; max-width: 150px; padding: 0; text-align: right; }
+.mtn-course .mtn-bubble { width: 26px; height: 26px; font-size: 0.75rem; box-shadow: none; background: #ede7f8; color: #3b2a6b; }
+.mtn-course.done { background: linear-gradient(135deg, #a58bdc 0%, #c4b5f5 100%); }
+.mtn-course.done .mtn-label { color: #1c1438; }
+.mtn-course.locked { background: #4a4560; border-color: #6b6380; box-shadow: none; opacity: 0.6; }
+.mtn-course.locked .mtn-bubble { background: #6b6380; color: #ede7f8; }
+.mtn-course.next { animation: mtn-float 3s ease-in-out infinite; }
+.mtn-course.next::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: mtn-shine 2.8s linear infinite;
+  pointer-events: none;
+}
+@keyframes mtn-float {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  50% { transform: translate(-50%, -50%) translateY(-4px); }
+}
+@keyframes mtn-shine {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+/* ===== لوحة الحساب ☰: تطلع فوق الصفحة كطبقة، من غير ما تدفع الجبل ===== */
+.header { position: relative; overflow: visible; }
+.page-header-actions { flex-wrap: nowrap; }
+.page-header-actions .acc-wrap { position: relative; }
+.page-header-actions .acc-wrap .side-card {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(92vw, 320px);
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 100;
+  background: #ffffff;
+  border: 1px solid #a58bdc;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 14px 34px rgba(32, 21, 57, 0.35);
+  margin: 0;
+}
+@media (min-width: 900px) {
+  .page-header-actions .acc-wrap .side-card { width: 340px; }
 }

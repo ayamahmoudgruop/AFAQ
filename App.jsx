@@ -449,6 +449,18 @@ function StudentPanel({ track, courses, done, user }) {
           <div className="acc-menu">
             <button type="button" onClick={() => setSub(sub === "notif" ? null : "notif")}>🔔 الإشعارات</button>
             <button type="button" onClick={() => setSub(sub === "badges" ? null : "badges")}>🏅 الشارات</button>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  const cur = localStorage.getItem("afaq-climber") || "girl";
+                  localStorage.setItem("afaq-climber", cur === "boy" ? "girl" : "boy");
+                  window.dispatchEvent(new Event("afaq-climber-change"));
+                } catch (e) {}
+              }}
+            >
+              🧗 تغيير الشخصية
+            </button>
             {user && (
               <button type="button" onClick={() => signOut(auth)}>🚪 تسجيل الخروج</button>
             )}
@@ -560,6 +572,7 @@ const PATH = [
 const mix = (p, q, f) => ({ x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f });
 
 function MountainView({ courses, done, onPick, level, onLevel, climber, onClimber }) {
+  const [shown, setShown] = useState(null);
   const levelsInOrder = LEVELS.filter((lv) => (courses || []).some((c) => c.level === lv));
   const idx = Math.max(0, LEVELS.indexOf(level));
   const isOpenLevel = (i) => {
@@ -573,6 +586,7 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
   ordered.forEach((c, i) => {
     if (i > 0 && !done.includes(ordered[i - 1].title) && !done.includes(c.title)) locked.add(c.title);
   });
+  const nextTitle = ordered.find((c) => !done.includes(c.title) && !locked.has(c.title))?.title;
   const segFrom = PATH[idx];
   const segTo = PATH[idx + 1] || PATH[idx];
   const n = inLevel.length;
@@ -600,7 +614,10 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
             className={"mtn-level" + (i === idx ? " active" : "") + (open ? "" : " locked")}
             style={{ left: p.x + "%", top: p.y + "%" }}
             disabled={!open}
-            onClick={() => onLevel(LEVELS[i])}
+            onClick={() => {
+              setShown(shown === LEVELS[i] ? null : LEVELS[i]);
+              onLevel(LEVELS[i]);
+            }}
           >
             <span className="mtn-level-num">{i + 1}</span>
             <span className="mtn-level-name">{LEVELS[i]}</span>
@@ -610,7 +627,7 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
 
       <div className="mtn-summit" style={{ left: PATH[3].x + "%", top: PATH[3].y + "%" }}>القمة</div>
 
-      {inLevel.map((c, j) => {
+      {shown === level && inLevel.map((c, j) => {
         const pos = courseAt(j);
         const isDone = done.includes(c.title);
         const isLocked = locked.has(c.title);
@@ -618,7 +635,7 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
           <button
             key={c.title}
             type="button"
-            className={"mtn-course" + (isDone ? " done" : "") + (isLocked ? " locked" : "")}
+            className={"mtn-course" + (isDone ? " done" : "") + (isLocked ? " locked" : "") + (c.title === nextTitle ? " next" : "")}
             style={{ left: pos.x + "%", top: pos.y + "%" }}
             onClick={() => {
               if (!isLocked) onPick(c);
@@ -642,8 +659,9 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
         type="button"
         className="mtn-switch"
         onClick={() => onClimber(climber === "boy" ? "girl" : "boy")}
+        style={{ display: "none" }}
       >
-        {climber === "boy" ? "🧗 ولد (غيّري)" : "🧗 بنت (غيّري)"}
+        {climber === "boy" ? "🧗 ولد" : "🧗 بنت"}
       </button>
     </div>
   );
@@ -672,6 +690,15 @@ function PageView({ route, done, onPick, user }) {
     } catch (e) {}
     setChosen(true);
   }
+  useEffect(() => {
+    const sync = () => {
+      try {
+        setClimber(localStorage.getItem("afaq-climber") || "girl");
+      } catch (e) {}
+    };
+    window.addEventListener("afaq-climber-change", sync);
+    return () => window.removeEventListener("afaq-climber-change", sync);
+  }, []);
   function chooseClimber(v) {
     setClimber(v);
     try {
@@ -756,10 +783,6 @@ function PageView({ route, done, onPick, user }) {
   if (!title) return null;
   return (
     <section className="page">
-      <div className="page-topbar">
-        {back}
-        <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
-      </div>
       <SectionHeader title={title} courses={tracks[route]} done={done} onSelect={setActiveLevel} />
       <div className="track-layout">
         <div className="track-main">
@@ -927,14 +950,21 @@ export default function App() {
     <>
       <header className="header">
         <div className="logo">آفاق</div>
-        <nav className="navbar">
-          <a href="#" className="active">الرئيسية</a>
-          <a href="#learning">الكورسات</a>
-          <a href="#resources">الموارد المجانية</a>
-          {!isPage && (
+        {isPage && tracks[route] ? (
+          <div className="page-header-actions">
+            <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
+            <a href="#" className="page-back-top">الرجوع للرئيسية</a>
+          </div>
+        ) : (
+          <nav className="navbar">
+            <a href="#" className="active">الرئيسية</a>
+            <a href="#learning">الكورسات</a>
+            <a href="#resources">الموارد المجانية</a>
+            {!isPage && (
   <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
-          )}
-        </nav>
+            )}
+          </nav>
+        )}
       </header>
 
       {isPage && <PageView route={route} done={done} onPick={pick} user={user} />}
