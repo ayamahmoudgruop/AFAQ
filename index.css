@@ -2226,3 +2226,41 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 .page-header-actions .acc-wrap .side-card * {
   text-align: right;
 }
+/* ===== تعديل نهائي لشكل ومكان كبسولات الجبل ===== */
+.mtn-course {
+  position: absolute !important;
+  transform: translate(-50%, -50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: #3b2a6b !important;
+  border: 2px solid #a58bdc !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+  color: #ede7f8 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 4px 15px rgba(32, 21, 57, 0.4) !important;
+  z-index: 50 !important;
+}
+
+.mtn-course .mtn-bubble {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  background: #ede7f8 !important;
+  color: #3b2a6b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
+}
+
+.mtn-course .mtn-label {
+  color: #ede7f8 !important;
+  font-size: 0.82rem !important;
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
