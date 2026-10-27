@@ -2243,3 +2243,137 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
 }
+
+
+/* "الرئيسية" تحت آفاق مباشرة */
+.logo-stack { display: flex; flex-direction: column; align-items: center; }
+.page-home-link { color: #3b2a6b; font-weight: 700; text-decoration: none; font-size: 0.85rem; margin-top: 2px; }
+
+.mtn-back {
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  z-index: 5;
+  background: rgba(32, 21, 57, 0.8);
+  color: #ede7f8;
+  border: 1px solid #a58bdc;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.mtn-capsule.test { background: linear-gradient(135deg, #5b4aa0 0%, #a58bdc 100%); }
+.start-course { margin-top: 6px; }
+
+
+/* القمة: آخر فقاعة (متقدم) فوق الجبل، بتوهج وتاج يجذب الطالب */
+.mtn-level.summit .mtn-level-num { position: relative; animation: summit-pulse 2.2s ease-in-out infinite; }
+.mtn-level.summit .mtn-level-num::before {
+  content: "👑";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+}
+.mtn-level.summit .mtn-level-name { background: #3b2a6b; border: 1px solid #c4b5f5; }
+@keyframes summit-pulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(196, 181, 245, 0.7), inset 0 0 8px rgba(255, 255, 255, 0.4); }
+  50% { box-shadow: 0 0 34px rgba(237, 231, 248, 1), inset 0 0 10px rgba(255, 255, 255, 0.6); }
+}
+
+/* تليجرام على اليمين تحت الجبل */
+.track-bottom { grid-template-columns: 1fr 1fr; }
+.track-bottom > div:first-child:empty { display: none; }
+.track-bottom > div:last-child { grid-column: 2; justify-self: end; width: 100%; }
+
+
+/* القمة: آخر فقاعة على الطريق، بعلامة مضيئة تجذب للوصول */
+.mtn-level.summit .mtn-level-num {
+  font-size: 1.5rem;
+  animation: mtn-summit-pulse 2.4s ease-in-out infinite;
+}
+@keyframes mtn-summit-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(237, 231, 248, 0.7); }
+  50% { box-shadow: 0 0 34px rgba(237, 231, 248, 1); }
+}
+
+/* تليجرام على اليمين تحت الجبل */
+.track-bottom { display: flex; justify-content: flex-start; align-items: flex-start; gap: 12px; }
+.track-bottom > div:last-child { order: -1; margin-inline-start: auto; }
+
+
+/* ===== عرض الجبل على الموبايل: الصورة كاملة بنفس نسبتها ===== */
+.mtn-wrap { aspect-ratio: 16 / 9; max-width: 100%; }
+@media (max-width: 480px) {
+  .mtn-wrap { aspect-ratio: 16 / 10; }
+  .mtn-panel { width: 52%; max-height: 80%; top: 4%; font-size: 0.7rem; }
+  .mtn-capsule { padding: 6px 10px; }
+}
+.mtn-bg { object-fit: cover; object-position: center; }
+
+/* احتفال الرفيق لما الطالب يوصل نص الرحلة */
+.mtn-fireworks {
+  position: absolute;
+  font-size: 1.6rem;
+  transform: translate(-50%, -50%);
+  animation: mtn-boom 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes mtn-boom {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.85; }
+  50% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+}
+
+/* كارت الاسم الحقيقي + أزرار الحذف للمالكة */
+.name-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f7f4fc;
+  border: 1px solid #a58bdc;
+  border-radius: 14px;
+  padding: 14px;
+  color: #2b1f4f;
+}
+.forum-link-btn {
+  background: none;
+  border: none;
+  color: #b00020;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+/* زميل الرحلة */
+.pair-box, .pair-notice { display: flex; flex-direction: column; gap: 10px; color: #2b1f4f; }
+.pair-item { background: #f7f4fc; border: 1px solid #a58bdc; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.pair-item p { margin: 0; }
+.pair-actions { display: flex; gap: 8px; }
+.pair-cheers { display: flex; flex-direction: column; gap: 6px; }
+.pair-cheer { background: #ffffff; border: 1px solid #a58bdc; border-radius: 999px; padding: 6px 10px; font-family: inherit; font-size: 0.8rem; color: #3b2a6b; cursor: pointer; text-align: center; }
+.pair-notice { background: #ffffff; border: 1px solid #a58bdc; border-radius: 14px; padding: 12px; margin: 10px 0; box-shadow: 0 6px 18px rgba(59, 42, 107, 0.15); }
+
+/* المشروع داخل الجبل */
+.project-overlay { position: absolute; inset: 0; z-index: 12; background: rgba(32, 21, 57, 0.92); overflow-y: auto; padding: 14px; border-radius: 22px; }
+.project-box { display: flex; flex-direction: column; gap: 10px; color: #ede7f8; }
+.project-box p { margin: 0; }
+.project-box .forum-meta { color: #c4b5f5; }
+.project-box .forum-input { background: #ffffff; color: #2b1f4f; }
+.project-head { display: flex; justify-content: space-between; align-items: center; }
+
+/* صفحة المراجعة */
+.admin-page { display: flex; flex-direction: column; gap: 12px; }
+.admin-item { background: #ffffff; border: 1px solid #a58bdc; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; color: #2b1f4f; }
+.admin-meta { display: flex; flex-direction: column; gap: 2px; }
+.admin-link { color: #3b2a6b; font-weight: 700; word-break: break-all; }
+.admin-actions { display: flex; gap: 8px; align-items: center; }
+
+/* كارت المالكة في الصفحة الرئيسية */
+.owner-card { background: #ffffff; border: 2px solid #a58bdc; border-radius: 16px; padding: 14px; margin: 12px auto; max-width: 720px; display: flex; flex-direction: column; gap: 10px; color: #2b1f4f; box-shadow: 0 6px 18px rgba(59, 42, 107, 0.15); }
+.owner-card-head { display: flex; justify-content: space-between; align-items: center; }
+.owner-count { background: #3b2a6b; color: #ede7f8; border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; }
+.owner-card-body { max-height: 60vh; overflow-y: auto; }

@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import Forum, { UserProfile } from "./Forum.jsx";
-import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK, stageTests } from "./data.js";
+import { PairsPanel, PairsWatcher } from "./Pairs.jsx";
+import { ProjectBox, useApprovedLevels } from "./Projects.jsx";
+import AdminPage, { OwnerCard } from "./Admin.jsx";
+import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK, stageTests, projects } from "./data.js";
 import CodeBox from "./CodeBox.jsx";
 import { auth } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -93,12 +96,12 @@ function CourseQuiz({ course, onPass }) {
     setResult(null);
   }
 
-  if (result === "pass") return <p className="forum-thanks">🎉 نجحتي في الاختبار، والمرحلة الجاية اتفتحت لو خلصتي الكورسات كلها.</p>;
+  if (result === "pass") return <p className="forum-thanks">🎉 تم النجاح في الاختبار، والكورس اللي بعده اتفتح كلها.</p>;
 
   if (result === "fail") {
     return (
       <div className="quiz-test">
-        <p>محتاجة تحاولي تاني عشان تنجحي (70% على الأقل).</p>
+        <p>حاول مرة أخرى للنجاح (70% على الأقل).</p>
         <button type="button" className="quiz-btn" onClick={retry}>حاول تاني</button>
       </div>
     );
@@ -235,7 +238,7 @@ function CourseTree({ courses, onPick, done, track }) {
             style={{ top: it.y }}
           >
             {it.locked ? "🔒 " : ""}{it.label}
-            {it.locked && <span className="locked-note">اجتاز مرحلة قبلها عشان تفتحها</span>}
+            {it.locked && <span className="locked-note">اجتياز المرحلة اللي قبلها شرط لفتحها</span>}
           </div>
         ) : (
           <div
@@ -385,7 +388,7 @@ function NotificationsBox({ user }) {
   }
 
   if (!user) {
-    return <p className="notif-empty">سجّل دخول عشان توصلك إشعارات الردود على أسئلتك.</p>;
+    return <p className="notif-empty">يمكنك تسجيل الدخول لاستقبال إشعارات الردود على أسئلتك.</p>;
   }
 
   const fresh = mine
@@ -411,7 +414,7 @@ function CodeCard() {
   return (
     <div className="side-card code-card">
       <button type="button" className="code-card-btn" onClick={() => setOpen(!open)}>
-        🧪 جرّب الكود بنفسك {open ? "▲" : "▼"}
+        🧪 تجربة الكود {open ? "▲" : "▼"}
       </button>
       {open && <CodeBox />}
     </div>
@@ -442,13 +445,14 @@ function StudentPanel({ track, courses, done, user }) {
       {open && (
         <div className="side-card">
           <p className="forum-meta">
-            {user ? "أهلاً " + (user.displayName || "") : "أنت زائر، سجّل دخول عشان تحفظ تقدمك"}
+            {user ? "أهلاً " + (user.displayName || "") : "يمكنك تسجيل الدخول لحفظ التقدم"}
           </p>
           <p className="forum-meta">المسار: {trackName}</p>
 
           <div className="acc-menu">
             <button type="button" onClick={() => setSub(sub === "notif" ? null : "notif")}>🔔 الإشعارات</button>
             <button type="button" onClick={() => setSub(sub === "badges" ? null : "badges")}>🏅 الشارات</button>
+            <button type="button" onClick={() => setSub(sub === "pairs" ? null : "pairs")}>🤝 زميل الرحلة</button>
             <button
               type="button"
               onClick={() => {
@@ -467,6 +471,7 @@ function StudentPanel({ track, courses, done, user }) {
           </div>
 
           {sub === "notif" && <NotificationsBox user={user} />}
+          {sub === "pairs" && <PairsPanel user={user} />}
           {sub === "badges" && (
             <div className="badge-list">
               {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا عند إنهاء أي كورس.</p>}
@@ -486,7 +491,7 @@ function TelegramCard() {
   return (
     <div className="side-card">
       <h4>مجتمع آفاق على تليجرام</h4>
-      <p className="forum-meta">تابع الأخبار وشارك مع الطلبة التانيين.</p>
+      <p className="forum-meta">تابع الأخبار وشارك مع الآخرين.</p>
       <a className="quiz-btn" href={TELEGRAM_LINK} target="_blank" rel="noreferrer">انضم للمجتمع 🚀</a>
     </div>
   );
@@ -504,8 +509,8 @@ function Leaderboard({ user }) {
       () => setErr(true)
     );
   }, []);
-  if (err) return <p className="forum-error">تعذّر تحميل المتصدرين، حدّث الصفحة.</p>;
-  if (rows.length === 0) return <p className="tree-empty">لسه مفيش متصدرين، ابدأي الكورسات وكوني أول واحد.</p>;
+  if (err) return <p className="forum-error">تعذّر تحميل المتصدرين. حدّث الصفحة وحاول مرة أخرى.</p>;
+  if (rows.length === 0) return <p className="tree-empty">لسه مفيش متصدرين. أول إنجاز بيفتح الترتيب.</p>;
   return (
     <div className="lb-list">
       {rows.map((r, i) => (
@@ -567,18 +572,21 @@ const PATH = [
   { x: 16, y: 88 },
   { x: 40, y: 62 },
   { x: 68, y: 36 },
-  { x: 84, y: 12 },
+  { x: 82, y: 20 },
 ];
 const mix = (p, q, f) => ({ x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f });
 
-function MountainView({ courses, done, onPick, level, onLevel, climber, onClimber }) {
+function MountainView({ courses, done, onPick, level, onLevel, climber, onClimber, track, user, trackLabel, approved }) {
   const [shown, setShown] = useState(null);
+  const [projOpen, setProjOpen] = useState(null);
   const levelsInOrder = LEVELS.filter((lv) => (courses || []).some((c) => c.level === lv));
   const idx = Math.max(0, LEVELS.indexOf(level));
   const isOpenLevel = (i) => {
     if (i === 0) return true;
     const prev = (courses || []).filter((c) => c.level === LEVELS[i - 1]);
-    return prev.length > 0 && prev.every((c) => done.includes(c.title));
+    const prevProject = projects[track]?.[LEVELS[i - 1]];
+    const projectOk = !prevProject || (approved && approved.has(LEVELS[i - 1]));
+    return prev.length > 0 && prev.every((c) => done.includes(c.title)) && projectOk;
   };
   const inLevel = (courses || []).filter((c) => c.level === level);
   const ordered = LEVELS.flatMap((lv) => (courses || []).filter((c) => c.level === lv));
@@ -586,6 +594,17 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
   ordered.forEach((c, i) => {
     if (i > 0 && !done.includes(ordered[i - 1].title) && !done.includes(c.title)) locked.add(c.title);
   });
+  const seq = [];
+  inLevel.forEach((c) => {
+    seq.push({ kind: "course", key: "c-" + c.title, c, done: done.includes("started::" + c.title) });
+    if (c.test && c.test.length > 0) {
+      seq.push({ kind: "test", key: "t-" + c.title, c, done: done.includes(c.title) });
+    }
+  });
+  const levelProject = projects[track]?.[level];
+  if (levelProject && inLevel.length > 0) {
+    seq.push({ kind: "project", key: "p-" + level, c: inLevel[inLevel.length - 1], done: !!(approved && approved.has(level)) });
+  }
   const nextTitle = ordered.find((c) => !done.includes(c.title) && !locked.has(c.title))?.title;
   const segFrom = PATH[idx];
   const segTo = PATH[idx + 1] || PATH[idx];
@@ -607,48 +626,75 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
 
       {PATH.slice(0, 3).map((p, i) => {
         const open = isOpenLevel(i);
+        if (shown && shown !== LEVELS[i]) return null;
+        const pos = i === 2 ? PATH[3] : p;
         return (
           <button
             key={LEVELS[i]}
             type="button"
-            className={"mtn-level" + (i === idx ? " active" : "") + (open ? "" : " locked")}
-            style={{ left: p.x + "%", top: p.y + "%" }}
+            className={"mtn-level" + (i === idx ? " active" : "") + (open ? "" : " locked") + (i === 2 ? " summit" : "")}
+            style={{ left: pos.x + "%", top: pos.y + "%" }}
             disabled={!open}
             onClick={() => {
               setShown(shown === LEVELS[i] ? null : LEVELS[i]);
               onLevel(LEVELS[i]);
             }}
           >
-            <span className="mtn-level-num">{i + 1}</span>
-            <span className="mtn-level-name">{LEVELS[i]}</span>
+            <span className="mtn-level-num">{i === 2 ? "🏁" : i + 1}</span>
+            <span className="mtn-level-name">{i === 2 ? "القمة · " + LEVELS[i] : LEVELS[i]}</span>
           </button>
         );
       })}
 
-      <div className="mtn-summit" style={{ left: PATH[3].x + "%", top: PATH[3].y + "%" }}>القمة</div>
+      {shown && (
+        <button type="button" className="mtn-back" onClick={() => setShown(null)}>
+          ⬅ كل المستويات
+        </button>
+      )}
 
       {shown === level && (
         <div className="mtn-panel" style={{ left: climberPos.x <= 50 ? "46%" : "2%" }}>
-          {inLevel.map((c) => {
-            const isDone = done.includes(c.title);
-            const isLocked = locked.has(c.title);
+          {seq.map((it, k) => {
+            const prevDone = k === 0 || seq[k - 1].done;
+            const isLockedItem = !it.done && !prevDone;
+            const isNextItem = !it.done && prevDone;
             return (
               <button
-                key={c.title}
+                key={it.key}
                 type="button"
-                className={"mtn-capsule" + (isDone ? " done" : "") + (isLocked ? " locked" : "") + (c.title === nextTitle ? " next" : "")}
+                className={"mtn-capsule" + (it.kind === "test" ? " test" : "") + (it.done ? " done" : "") + (isLockedItem ? " locked" : "") + (isNextItem ? " next" : "")}
                 onClick={() => {
-                  if (!isLocked) onPick(c);
+                  if (isLockedItem) return;
+                  if (it.kind === "project") setProjOpen(level);
+                  else onPick(it.c);
                 }}
               >
-                <span className="mtn-capsule-icon">{isDone ? "✓" : isLocked ? "🔒" : "◉"}</span>
-                <span className="mtn-capsule-text">{c.title}</span>
+                <span className="mtn-capsule-icon">{it.kind === "project" ? "🛠️" : it.kind === "test" ? "🧪" : it.done ? "✓" : isLockedItem ? "🔒" : "◉"}</span>
+                <span className="mtn-capsule-text">{it.kind === "project" ? "مشروع " + level : it.kind === "test" ? "اختبار: " + it.c.title : it.c.title}</span>
               </button>
             );
           })}
         </div>
       )}
 
+      {projOpen && projects[track]?.[projOpen] && user && (
+        <div className="project-overlay">
+          <ProjectBox
+            user={user}
+            track={track}
+            trackLabel={trackLabel}
+            level={projOpen}
+            project={projects[track][projOpen]}
+            approved={approved || new Set()}
+            onClose={() => setProjOpen(null)}
+          />
+        </div>
+      )}
+      {ordered.length > 0 && ordered.filter((c) => done.includes(c.title)).length / ordered.length >= 0.5 && (
+        <span className="mtn-fireworks" style={{ left: Math.min(climberPos.x + 8, 90) + "%", top: Math.max(climberPos.y - 26, 4) + "%" }}>
+          🎆
+        </span>
+      )}
       <img
         className="mtn-climber"
         src={climber === "boy" ? "/climber-boy.png" : "/climber-girl.png"}
@@ -671,6 +717,7 @@ function MountainView({ courses, done, onPick, level, onLevel, climber, onClimbe
 /* صفحة كاملة لكل مسار / للغات / للمنتدى */
 function PageView({ route, done, onPick, user }) {
   const [activeLevel, setActiveLevel] = useState(LEVELS[0]);
+  const approvedLevels = useApprovedLevels(user, route);
   const [climber, setClimber] = useState(() => {
     try {
       return localStorage.getItem("afaq-climber") || "girl";
@@ -712,6 +759,15 @@ function PageView({ route, done, onPick, user }) {
     </a>
   );
 
+  if (route === "admin") {
+    return (
+      <section className="page">
+        {back}
+        <AdminPage user={user} />
+      </section>
+    );
+  }
+
   if (route.startsWith("u/")) {
     return (
       <section className="page">
@@ -736,7 +792,7 @@ function PageView({ route, done, onPick, user }) {
       <section className="page">
         {back}
         <h2>المنتدى</h2>
-        <p className="forum-intro">اكتب سؤالك وكودك لو فيه، والرد هيوصلك.</p>
+        <p className="forum-intro">يمكنك كتابة السؤال والكود (اختياري)، والرد يوصل لصاحب السؤال.</p>
         <Forum />
       </section>
     );
@@ -794,7 +850,7 @@ function PageView({ route, done, onPick, user }) {
             <div className="climber-intro">
               <h3>رحلتك في آفاق تبدأ من هنا ✨</h3>
               <p>كل رحلة عظيمة بتبدأ بخطوة، والنهارده دي رحلتك أنت!</p>
-              <p>اختار الشخصية اللي تحب إنها ترافقك في رحلتك التعليمية.</p>
+              <p>اختر الشخصية اللي ترافق رحلتك التعليمية.</p>
               <div className="climber-choices">
                 <button
                   type="button"
@@ -813,7 +869,7 @@ function PageView({ route, done, onPick, user }) {
                   <span>شخصية الولد</span>
                 </button>
               </div>
-              <p className="climber-note">لا تقلق، تقدر تغيّر اختيارك في أي وقت.</p>
+              <p className="climber-note">يمكنك تغيير الاختيار في أي وقت.</p>
               <button type="button" className="climber-start" onClick={startJourney}>
                 يلا نبدأ رحلتنا 🚀
               </button>
@@ -828,6 +884,10 @@ function PageView({ route, done, onPick, user }) {
             onLevel={setActiveLevel}
             climber={climber}
             onClimber={chooseClimber}
+            track={route}
+            user={user}
+            trackLabel={TRACK_TITLES[route]}
+            approved={approvedLevels}
           />
           <div className="track-bottom">
             <div>{route === "programming" && <CodeCard />}</div>
@@ -921,6 +981,15 @@ export default function App() {
     saveUserData(user.uid, { done }).catch(() => {});
     saveLeaderboard(user.uid, user.displayName || "مستخدم", done.length).catch(() => {});
   }, [done, user, doneReady]);
+  function startCourse(c) {
+    const key = "started::" + c.title;
+    if (!done.includes(key)) setDone((prev) => [...prev, key]);
+    try {
+      localStorage.setItem("afaq-pending", c.title);
+    } catch (e) {}
+    setPending(c.title);
+    if (c.href) window.open(c.href, "_blank", "noopener");
+  }
   function toggleDone(title) {
     try {
       if (localStorage.getItem("afaq-pending") === title) localStorage.removeItem("afaq-pending");
@@ -950,11 +1019,13 @@ export default function App() {
   return (
     <>
       <header className="header">
-        <div className="logo">آفاق</div>
+        <div className="logo-stack">
+          <div className="logo">آفاق</div>
+          {isPage && tracks[route] && <a href="#" className="page-home-link">الرئيسية</a>}
+        </div>
         {isPage && tracks[route] ? (
           <div className="page-header-actions">
             <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
-            <a href="#" className="page-back-top">الرجوع للرئيسية</a>
           </div>
         ) : (
           <nav className="navbar">
@@ -968,10 +1039,12 @@ export default function App() {
         )}
       </header>
 
+      <PairsWatcher user={user} />
       {isPage && <PageView route={route} done={done} onPick={pick} user={user} />}
 
       {!isPage && (
         <>
+      <OwnerCard user={user} />
       <section className="hero">
         <img className="hero-img" src="/hero.jpg" alt="" />
         <div className="hero-content">
@@ -1022,7 +1095,7 @@ export default function App() {
           <div className="card clickable" id="card-data" onClick={() => go("data")}>
             <Icon color="teal" src="/icon-data.png" alt="تحليل البيانات" fallback="📊" />
             <h3>تحليل البيانات</h3>
-            <p>ابدأ رحلتك مع البيانات<br />وحوّلها إلى قرارات واضحة.</p>
+            <p>بداية الرحلة مع البيانات<br />وتحويلها إلى قرارات واضحة.</p>
           </div>
 
           <div className="card clickable" id="card-ai" onClick={() => go("ai")}>
@@ -1097,6 +1170,7 @@ export default function App() {
           <div className="course-card">
             <p className="course-level">{course.level}</p>
             <p>{course.desc || "وصف الكورس هيتضاف قريباً."}</p>
+            <button type="button" className="quiz-btn start-course" onClick={() => startCourse(course)}>ابدأ الكورس</button>
             {course.exercise && (
               <>
                 <h4>تمرين</h4>
@@ -1104,18 +1178,18 @@ export default function App() {
               </>
             )}
             {pending === course.title && !done.includes(course.title) && course.test && course.test.length > 0 && (
-              <p className="forum-meta">رجعت من الكورس؟ اضغط علّم كمكتمل لو خلصته.</p>
+              <p className="forum-meta">رجعت من الكورس؟ يمكنك تعليمه كمكتمل بعد الانتهاء منه.</p>
             )}
             {course.test && course.test.length > 0 && !done.includes(course.title) ? (
               <CourseQuiz course={course} onPass={() => toggleDone(course.title)} />
             ) : done.includes(course.title) ? (
               <button type="button" className="quiz-btn ghost" onClick={() => toggleDone(course.title)}>
-                ✓ تم الإنهاء (اضغط للتراجع)
+                ✓ تم الإنهاء (اضغط مرة أخرى للتراجع)
               </button>
             ) : (
               <p className="forum-meta">الاختبار قريباً 🧪 لازم تنجحي فيه عشان الكورس اللي بعده يتفتح.</p>
             )}
-            <p className="forum-meta">بعد ما تخلّص الكورس، ارجع واضغط علّم كمكتمل.</p>
+            <p className="forum-meta">بعد إنهاء الكورس، يمكنك تعليمه كمكتمل.</p>
             <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
           </div>
         )}
