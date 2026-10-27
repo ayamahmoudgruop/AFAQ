@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { collection, doc, onSnapshot, query, where, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase.js";
+import { issueCertificate, CERT_TRACK_LABELS } from "./Certificates.jsx";
 
 const TRACK_NAMES = {
   programming: "البرمجة",
@@ -32,6 +33,15 @@ export default function AdminPage({ user }) {
   }, [user]);
 
   const isOwner = role === "owner";
+
+  const [certs, setCerts] = useState([]);
+
+  useEffect(() => {
+    if (!isOwner) return;
+    return onSnapshot(query(collection(db, "certRequests"), where("status", "==", "pending")), (snap) =>
+      setCerts(snap.docs.map((d) => d.data()))
+    );
+  }, [isOwner]);
 
   useEffect(() => {
     if (!isOwner) return;
@@ -67,6 +77,18 @@ export default function AdminPage({ user }) {
       <p className="forum-meta">المشاريع المعلقة: {items.length}</p>
       {err && <p className="forum-error">{err}</p>}
       {items.length === 0 && <p className="tree-empty">مفيش مشاريع منتظرة المراجعة دلوقتي.</p>}
+
+      {certs.length > 0 && (
+        <div className="admin-item">
+          <strong>🎓 طلبات الشهادات ({certs.length})</strong>
+          {certs.map((c) => (
+            <div key={c.uid + "_" + c.track} className="admin-actions">
+              <span>{c.name || "طالب"} · {CERT_TRACK_LABELS[c.track] || c.track}</span>
+              <button type="button" className="quiz-btn" onClick={() => issueCertificate(c).catch(() => setErr("تعذّر إصدار الشهادة"))}>إصدار</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {items.map((it) => (
         <div key={it.id} className="admin-item">

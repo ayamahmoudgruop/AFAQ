@@ -194,11 +194,11 @@ export default function Quiz({ user }) {
     <section className="quiz-section" id="quiz-section">
       <div className="quiz-card" id="quiz">
         <h2>اكتشف مسارك</h2>
-        <p className="quiz-subtitle">مش عارف تبدأ منين؟ 7 أسئلة قصيرة هتوضحلك طريقك.</p>
-        <input type="text" id="userName" placeholder="اكتب اسمك" value={name} onChange={(e) => setName(e.target.value)} />
+        <p className="quiz-subtitle">إذا كنت تتردد بين عدة مجالات وتشعر بالحيرة حيال نقطة البداية، فهذا الاختبار صُمم ليوجه خطواتك بدقة. أجيب عن الأسئلة التالية بوضوح، لنحدد معاً المسار التقني الأنسب لمهاراتك وتطلعاتك.</p>
+        <input type="text" id="userName" placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
 
         {best === null && current === 0 && !name.trim() && (
-          <p className="quiz-hint">اكتب اسمك لتبدأ الاختبار</p>
+          <p className="quiz-hint">اكتب اسمك لبدء الاختبار</p>
         )}
 
         {best === null ? (
@@ -251,14 +251,14 @@ export default function Quiz({ user }) {
 
             {!user && (
               <div className="quiz-save">
-                <p>احفظ مسارك بحسابك، وكمّل من حيث وقفت.</p>
-                <button type="button" className="quiz-btn ghost" onClick={loginGoogle}>سجّل دخول بجوجل</button>
+                <p>احفظ مسارك بحسابك، وكمّل من نفس النقطة.</p>
+                <button type="button" className="quiz-btn ghost" onClick={loginGoogle}>سجّل الدخول بجوجل</button>
               </div>
             )}
             <Feedback track={results[best][0]} />
             <div className="quiz-nav">
               <a href={TELEGRAM_LINK} target="_blank" rel="noreferrer" className="quiz-btn">
-                ادخل المجتمع 🚀
+                انضم للمجتمع 🚀
               </a>
               <a href={"#/" + SECTION_IDS[best]} className="quiz-btn ghost">
                 ابدأ التعلم
