@@ -41,3 +41,10 @@ createRoot(document.getElementById("root")).render(
     <App />
   </ErrorBox>
 );
+
+// تسجيل PWA: الموقع يشتغل أوفلاين ويتثبّت على الشاشة الرئيسية
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 
 const STARTER = `<h1>مرحباً</h1>
-<p>غيّر الكود واضغط شغّل</p>
+<p>عدّل الكود واضغط تشغيل</p>
 <style>
   body { font-family: sans-serif; text-align: center; }
   h1 { color: #3b2a6b; }
@@ -36,7 +36,7 @@ export default function CodeBox() {
   return (
     <section className="codebox-section" id="try-code">
       <h2>جرّب الكود بنفسك</h2>
-      <p className="codebox-hint">اكتب كود الويب وشوف النتيجة على طول</p>
+      <p className="codebox-hint">اكتب كود الويب، والنتيجة تظهر فوراً</p>
       <textarea
         className="codebox-input"
         value={code}

@@ -12,11 +12,14 @@ import {
   updateDoc,
   doc,
   arrayUnion,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { tracks } from "./data.js";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth, googleProvider } from "./firebase.js";
 import CodeBox from "./CodeBox.jsx";
+import { PairRequestButton } from "./Pairs.jsx";
 
 const MAX = { title: 120, body: 1500, code: 3000 };
 const COOLDOWN_MS = 30000;
@@ -64,6 +67,89 @@ function useUser() {
   return user;
 }
 
+
+// الاسم الحقيقي المحفوظ في حساب المستخدم
+function useProfile(user) {
+  const [name, setName] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (!user) {
+      setName("");
+      setLoaded(true);
+      return;
+    }
+    return onSnapshot(doc(db, "users", user.uid), (snap) => {
+      setName(snap.exists() && snap.data().name ? String(snap.data().name) : "");
+      setLoaded(true);
+    });
+  }, [user]);
+  return { name, loaded };
+}
+
+// الدور: owner (أنتي) / admin (مشرف) / لا شيء
+function useRole(user) {
+  const [role, setRole] = useState("");
+  useEffect(() => {
+    if (!user) {
+      setRole("");
+      return;
+    }
+    return onSnapshot(doc(db, "admins", user.uid), (snap) => {
+      setRole(snap.exists() ? String(snap.data().role || "admin") : "");
+    }, () => setRole(""));
+  }, [user]);
+  return role;
+}
+
+// الاسم لازم يكون اسمين، عربي أو إنجليزي، من غير أرقام أو رموز
+const NAME_RE_AR = /^[\u0600-\u06FF]+(\s+[\u0600-\u06FF]+)+$/;
+const NAME_RE_EN = /^[A-Za-z]+(\s+[A-Za-z]+)+$/;
+function isValidName(s) {
+  const t = s.trim().replace(/\s+/g, " ");
+  return t.length <= 40 && (NAME_RE_AR.test(t) || NAME_RE_EN.test(t));
+}
+
+// كارت كتابة الاسم: بيظهر أول مرة بس، والاسم بعدها ما يتغيّرش
+function NameGate({ user }) {
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function save(e) {
+    e.preventDefault();
+    if (!isValidName(value)) {
+      setMsg("اكتب اسمين على الأقل، عربي أو إنجليزي، من غير أرقام أو رموز.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const clean = value.trim().replace(/\s+/g, " ");
+      await setDoc(doc(db, "users", user.uid), { name: clean, nameSetAt: serverTimestamp() }, { merge: true });
+    } catch (err) {
+      setMsg("حصلت مشكلة في الحفظ. حاول مرة أخرى.");
+    }
+    setBusy(false);
+  }
+
+  return (
+    <form className="name-gate" onSubmit={save}>
+      <strong>اكتب اسمك الحقيقي</strong>
+      <p className="forum-meta">الاسم بيظهر باسمك في النشر والردود ولوحة الشرف، ومش هيتغيّر بعد الحفظ.</p>
+      <input
+        className="forum-input"
+        placeholder="مثال: نور أحمد"
+        value={value}
+        maxLength={40}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      {msg && <p className="forum-error">{msg}</p>}
+      <button type="submit" className="quiz-btn" disabled={busy || !value.trim()}>
+        {busy ? "جاري الحفظ..." : "حفظ الاسم"}
+      </button>
+    </form>
+  );
+}
+
 function AuthBar({ user }) {
   const [err, setErr] = useState("");
 
@@ -79,7 +165,7 @@ function AuthBar({ user }) {
   if (!user) {
     return (
       <div className="forum-auth">
-        <button type="button" className="quiz-btn" onClick={login}>سجّل دخول بجوجل</button>
+        <button type="button" className="quiz-btn" onClick={login}>سجّل الدخول بجوجل</button>
         <p className="forum-meta">قم بتسجيل الدخول لتتمكن من النشر والرد والإبلاغ.</p>
         {err && <p className="forum-error">{err}</p>}
       </div>
@@ -249,6 +335,8 @@ function Leaderboard() {
 
 export default function Forum() {
   const user = useUser();
+  const profile = useProfile(user);
+  const role = useRole(user);
   const [questions, setQuestions] = useState([]);
   const [loadError, setLoadError] = useState(false);
   const [view, setView] = useState("list");
@@ -265,11 +353,11 @@ export default function Forum() {
   }, []);
 
   if (view === "new") {
-    return <NewQuestion user={user} onDone={() => setView("list")} onCancel={() => setView("list")} />;
+    return <NewQuestion user={user} name={profile.name} onDone={() => setView("list")} onCancel={() => setView("list")} />;
   }
 
   if (view === "question" && active) {
-    return <QuestionView user={user} question={active} onBack={() => setView("list")} />;
+    return <QuestionView user={user} name={profile.name} role={role} question={active} onBack={() => setView("list")} />;
   }
 
   const shown = filter === "الكل" ? questions : questions.filter((q) => (q.category || "عام") === filter);
@@ -284,7 +372,7 @@ export default function Forum() {
         disabled={!user}
         onClick={() => setView("new")}
       >
-        اكتب سؤال جديد
+        إضافة سؤال جديد
       </button>
 
       <div className="forum-chips">
@@ -323,7 +411,7 @@ export default function Forum() {
   );
 }
 
-function NewQuestion({ user, onDone, onCancel }) {
+function NewQuestion({ user, name, onDone, onCancel }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("عام");
   const [body, setBody] = useState("");
@@ -334,6 +422,8 @@ function NewQuestion({ user, onDone, onCancel }) {
   const valid =
     user && title.trim() && body.trim() &&
     title.length <= MAX.title && body.length <= MAX.body && code.length <= MAX.code;
+
+  if (!name) return <NameGate user={user} />;
 
   async function send(e) {
     e.preventDefault();
@@ -347,7 +437,7 @@ function NewQuestion({ user, onDone, onCancel }) {
     try {
       await addDoc(collection(db, "questions"), {
         uid: user.uid,
-        name: (user.displayName || "مستخدم").slice(0, 40),
+        name: name.slice(0, 40),
         title: title.trim(),
         category,
         body: body.trim(),
@@ -367,7 +457,7 @@ function NewQuestion({ user, onDone, onCancel }) {
     <form className="forum-form" onSubmit={send}>
       <button type="button" className="page-back" onClick={onCancel}>رجوع للأسئلة</button>
       <input className="forum-input" placeholder="مثال: احتاج مساعدة" value={title} maxLength={MAX.title} onChange={(e) => setTitle(e.target.value)} />
-      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة والتفاصيل في خانة الشرح</p>
+      <p className="forum-meta">اكتب المشكلة أو الهدف في جملة قصيرة، والتفاصيل في خانة الشرح</p>
       <select className="forum-input" value={category} onChange={(e) => setCategory(e.target.value)}>
         {CATEGORIES.map((c) => (
           <option key={c} value={c}>{c}</option>
@@ -386,7 +476,7 @@ function NewQuestion({ user, onDone, onCancel }) {
   );
 }
 
-function QuestionView({ user, question, onBack }) {
+function QuestionView({ user, name, role, question, onBack }) {
   const [replies, setReplies] = useState([]);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
@@ -396,6 +486,17 @@ function QuestionView({ user, question, onBack }) {
     const q = query(collection(db, "questions", question.id, "replies"), orderBy("createdAt", "asc"));
     return onSnapshot(q, (snap) => setReplies(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
   }, [question.id]);
+
+  async function deleteQuestion() {
+    if (!window.confirm("متأكدة إنك عايزة تحذفي السؤال ده؟")) return;
+    await deleteDoc(doc(db, "questions", question.id));
+    onBack();
+  }
+
+  async function deleteReply(rid) {
+    if (!window.confirm("تحذف الرد ده؟")) return;
+    await deleteDoc(doc(db, "questions", question.id, "replies", rid));
+  }
 
   async function reply(e) {
     e.preventDefault();
@@ -409,7 +510,7 @@ function QuestionView({ user, question, onBack }) {
     try {
       await addDoc(collection(db, "questions", question.id, "replies"), {
         uid: user.uid,
-        name: (user.displayName || "مستخدم").slice(0, 40),
+        name: name.slice(0, 40),
         body: body.trim(),
         createdAt: serverTimestamp(),
       });
@@ -434,6 +535,9 @@ function QuestionView({ user, question, onBack }) {
       {question.code && <pre className="forum-pre">{question.code}</pre>}
       <div className="forum-actions">
         <ReportButton user={user} questionId={question.id} />
+        {role === "owner" && (
+          <button type="button" className="forum-link-btn" onClick={deleteQuestion}>🗑️ حذف السؤال</button>
+        )}
       </div>
 
       <h4>الردود ({replies.length})</h4>
@@ -446,11 +550,16 @@ function QuestionView({ user, question, onBack }) {
           <div className="forum-actions">
             <HelpfulButton user={user} questionId={question.id} reply={r} />
             <ReportButton user={user} questionId={question.id} replyId={r.id} />
+            {role === "owner" && (
+              <button type="button" className="forum-link-btn" onClick={() => deleteReply(r.id)}>🗑️ حذف</button>
+            )}
           </div>
         </div>
       ))}
 
-      {user ? (
+      {user && !name ? (
+        <NameGate user={user} />
+      ) : user ? (
         <form className="forum-form" onSubmit={reply}>
           <textarea className="forum-input" placeholder="اكتب ردك" value={body} maxLength={MAX.body} onChange={(e) => setBody(e.target.value)} />
           {msg && <p className="forum-error">{msg}</p>}
@@ -482,6 +591,7 @@ export function UserProfile({ uid }) {
     <div className="forum-list">
       <h2>{name}</h2>
       <p className="forum-meta">عدد الأسئلة: {items.length}</p>
+      <PairRequestButton targetUid={uid} />
       {items.length === 0 && <p className="tree-empty">لا توجد أسئلة منشورة بعد.</p>}
       {items.map((q) => (
         <div key={q.id} className="forum-item">
