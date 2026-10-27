@@ -2377,3 +2377,56 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 .owner-card-head { display: flex; justify-content: space-between; align-items: center; }
 .owner-count { background: #3b2a6b; color: #ede7f8; border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; }
 .owner-card-body { max-height: 60vh; overflow-y: auto; }
+
+/* ===== الهيدر: آفاق في مكانها الأول (يمين)، ☰ قصادها (شمال)، والرئيسية تحت آفاق ===== */
+.header { display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; }
+.header .logo-stack { display: flex; flex-direction: column; align-items: flex-start; }
+.header .page-header-actions { display: flex; align-items: center; justify-content: flex-start; }
+
+/* تليجرام: نص الحجم، على اليمين تحت الجبل */
+.track-bottom { display: flex; justify-content: flex-start; align-items: flex-start; }
+.track-bottom > div:last-child {
+  order: -1;
+  width: 50%;
+  max-width: 190px;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+.track-bottom > div:last-child .side-card { padding: 8px; }
+.track-bottom > div:last-child h4 { font-size: 0.8rem; margin: 0 0 4px; }
+.track-bottom > div:last-child p { font-size: 0.7rem; margin: 0 0 6px; }
+.track-bottom > div:last-child .quiz-btn { font-size: 0.72rem; padding: 6px 8px; }
+
+
+/* الجبل بحجمه الحقيقي (نفس نسبة الصورة 2048×1152) على كل الشاشات */
+.mtn-wrap, .mtn-wrap { aspect-ratio: 16 / 9 !important; height: auto; }
+@media (max-width: 480px) {
+  .mtn-wrap { aspect-ratio: 16 / 9 !important; }
+}
+.mtn-bg { object-fit: cover; object-position: center; width: 100%; height: 100%; }
+.mtn-level-name { white-space: nowrap; font-size: 0.72rem; }
+
+
+/* الصورة كاملة بدون قص، والمستويات والبنت داخل الكادر */
+.mtn-wrap { aspect-ratio: 16 / 9 !important; }
+.mtn-bg { object-fit: cover; object-position: center; }
+.mtn-climber { height: 20%; }
+.mtn-level { margin-top: 0; }
+
+/* طلب العميل + البورتفوليو */
+.client-brief { background: rgba(237, 231, 248, 0.08); border: 1px solid #a58bdc; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.brief-list { margin: 4px 0 0; padding-inline-start: 18px; }
+.brief-list li { margin: 3px 0; }
+.portfolio { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.portfolio-item { background: #ffffff; border: 1px solid #a58bdc; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px; color: #2b1f4f; }
+
+/* الشهادة */
+.cert-card { background: #ffffff; border: 1px solid #a58bdc; border-radius: 14px; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; color: #2b1f4f; }
+.cert-verify { background: #ffffff; border: 2px solid #a58bdc; border-radius: 18px; padding: 24px; text-align: center; color: #2b1f4f; max-width: 480px; margin: 20px auto; display: flex; flex-direction: column; gap: 8px; }
+.cert-verify h2 { margin: 0; color: #3b2a6b; }
+
+/* القايمة: سهلة تتقفل */
+.side-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.side-close { background: #f0ecfa; border: 1px solid #a58bdc; color: #3b2a6b; border-radius: 50%; width: 34px; height: 34px; font-size: 1rem; cursor: pointer; font-family: inherit; }
+.side-close:active { transform: scale(0.95); }
+.side-card { touch-action: pan-y; }
