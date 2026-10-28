@@ -1,0 +1,1242 @@
+import React, { useEffect, useRef, useState } from "react";
+import Quiz from "./Quiz.jsx";
+import Forum, { UserProfile } from "./Forum.jsx";
+import { PairsPanel, PairsWatcher } from "./Pairs.jsx";
+import { ProjectBox, useApprovedLevels } from "./Projects.jsx";
+import AdminPage, { OwnerCard } from "./Admin.jsx";
+import { CertRequestCard, VerifyPage } from "./Certificates.jsx";
+import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK, stageTests, projects } from "./data.js";
+import CodeBox from "./CodeBox.jsx";
+import { auth } from "./firebase.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { loadUserData, saveUserData, saveLeaderboard } from "./sync.js";
+import { collection, query, where, orderBy, limit, onSnapshot, doc } from "firebase/firestore";
+import { db } from "./firebase.js";
+
+const LEVELS = ["مبتدئ", "متوسط", "متقدم"];
+const TRACK_TITLES = {
+  programming: "البرمجة",
+  marketing: "التسويق",
+  design: "التصميم",
+  data: "تحليل البيانات",
+  ai: "الذكاء الاصطناعي",
+  cyber: "الأمن السيبراني",
+};
+
+/* أيقونة: لو الصورة مش موجودة يظهر الإيموجي بدلها */
+function Icon({ color, src, alt, fallback }) {
+  const [failed, setFailed] = useState(false);
+  const imgRef = useRef(null);
+
+  // لو الصورة فشلت قبل ما React يشتغل، نرجّع الإيموجي
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailed(true);
+  }, []);
+
+  return (
+    <div className={"icon " + color}>
+      {failed ? fallback : <img ref={imgRef} src={src} alt={alt} onError={() => setFailed(true)} />}
+    </div>
+  );
+}
+
+/* نافذة منبثقة (dialog) */
+function Modal({ open, onClose, title, className = "", children }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const dlg = ref.current;
+    if (!dlg) return;
+    if (open && !dlg.open) dlg.showModal();
+    if (!open && dlg.open) dlg.close();
+  }, [open]);
+
+  return (
+    <dialog
+      ref={ref}
+      className={"lang-dialog " + className}
+      onCancel={(e) => { e.preventDefault(); onClose(); }}
+      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+    >
+      <div className="dialog-head">
+        <h3>{title}</h3>
+        <button type="button" className="dialog-close" aria-label="إغلاق" onClick={onClose}>✕</button>
+      </div>
+      <div className="dialog-body">{children}</div>
+    </dialog>
+  );
+}
+
+/* اختبار الكورس: أسئلة واحدة واحدة، والنجاح من 70% */
+function CourseQuiz({ course, onPass }) {
+  const qs = course.test || [];
+  const [idx, setIdx] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const [result, setResult] = useState(null); // null | "pass" | "fail"
+
+  function next() {
+    if (picked === null) return;
+    const final = score + (picked === qs[idx].answer ? 1 : 0);
+    if (idx + 1 < qs.length) {
+      setScore(final);
+      setIdx(idx + 1);
+      setPicked(null);
+      return;
+    }
+    const ok = final / qs.length >= 0.7;
+    setResult(ok ? "pass" : "fail");
+    if (ok) onPass();
+  }
+
+  function retry() {
+    setIdx(0);
+    setPicked(null);
+    setScore(0);
+    setResult(null);
+  }
+
+  if (result === "pass") return <p className="forum-thanks">🎉 تم النجاح في الاختبار، والكورس اللي بعده اتفتح كلها.</p>;
+
+  if (result === "fail") {
+    return (
+      <div className="quiz-test">
+        <p>حاول مرة أخرى للنجاح (70% على الأقل).</p>
+        <button type="button" className="quiz-btn" onClick={retry}>حاول تاني</button>
+      </div>
+    );
+  }
+
+  const q = qs[idx];
+  return (
+    <div className="quiz-test">
+      <p className="forum-meta">سؤال {idx + 1} من {qs.length}</p>
+      <p className="quiz-test-q">{q.q}</p>
+      <div className="quiz-options">
+        {q.options.map((opt, i) => (
+          <label key={i}>
+            <input type="radio" name={"t-" + course.title} checked={picked === i} onChange={() => setPicked(i)} />
+            <span>{opt}</span>
+          </label>
+        ))}
+      </div>
+      <button type="button" className="quiz-btn" disabled={picked === null} onClick={next}>
+        {idx + 1 === qs.length ? "خلّص الاختبار" : "التالي"}
+      </button>
+    </div>
+  );
+}
+
+/* شجرة الكورسات: مرتبة من مبتدئ لمتقدم */
+const TREE_ICONS = { "مبتدئ": "🌱", "متوسط": "⚡", "متقدم": "🚀" };
+
+function CourseTree({ courses, onPick, done, track }) {
+  if (!courses || courses.length === 0) {
+    return <p className="tree-empty">قريباً 🌱 الكورسات هتتضاف قريباً</p>;
+  }
+  const ordered = LEVELS.flatMap((level) => courses.filter((c) => c.level === level));
+  const next = ordered.find((c) => !done.includes(c.title));
+  const stageKeyOf = (lv) => "stage::" + track + "::" + lv;
+  // كل كورس بيتفتح بعد ما الكورس اللي قبله يتعلّم كمكتمل (بعد اجتياز اختباره)
+  const lockedSet = new Set();
+  ordered.forEach((c, i) => {
+    if (i > 0 && !done.includes(ordered[i - 1].title) && !done.includes(c.title)) lockedSet.add(c.title);
+  });
+
+  // من فوق لتحت: المتقدم فوق والمبتدئ تحت، والمسار بيبدأ من تحت
+  const topDown = [...LEVELS].reverse();
+
+  // نحسب مكان كل عنصر بالترتيب (المستويات والكورسات)
+  const ROW = 104;
+  const items = [];
+  let y = 70;
+  // المرحلة بتتفتح لما كل كورسات المرحلة اللي قبلها تخلص (بالاختبار)
+  const unlockedMap = {};
+  let prevOk = true;
+  LEVELS.forEach((lv) => {
+    const list = courses.filter((c) => c.level === lv);
+    unlockedMap[lv] = prevOk;
+    if (list.length)
+      prevOk =
+        prevOk &&
+        list.every((c) => done.includes(c.title)) &&
+        (!(stageTests[track] && stageTests[track][lv]) || done.includes(stageKeyOf(lv)));
+  });
+  topDown.forEach((level) => {
+    const list = courses.filter((c) => c.level === level);
+    if (list.length === 0) return;
+    if (!unlockedMap[level]) {
+      items.push({ type: "level", key: "lv-" + level, label: level, y, locked: true });
+      y += 62 + 14;
+      return;
+    }
+    items.push({ type: "level", key: "lv-" + level, label: level, y });
+    y += 62;
+    list.forEach((c, i) => {
+      items.push({ type: "course", key: c.title, c, level, side: i % 2 === 0 ? "left" : "right", y });
+      y += ROW;
+    });
+    const st = stageTests[track] && stageTests[track][level];
+    if (st) {
+      items.push({
+        type: "stage",
+        key: "st-" + level,
+        level,
+        y,
+        passed: done.includes(stageKeyOf(level)),
+        ready: list.every((c) => done.includes(c.title)),
+      });
+      y += 78;
+    }
+    y += 14;
+  });
+  const H = y + 90;
+
+  return (
+    <div className="tree-graph" style={{ height: H }}>
+      <svg className="tree-svg" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        {/* الجذع */}
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-glow" style={{ stroke: "#a58bdc", strokeWidth: 26, opacity: 0.3, fill: "none" }} />
+        <line x1="50" y1={H - 40} x2="50" y2="34" className="trunk-core" style={{ stroke: "#ede7f8", strokeWidth: 7, fill: "none" }} />
+        <polygon points={`50,6 57,30 43,30`} className="trunk-arrow" style={{ fill: "#ede7f8" }} />
+        {/* الفروع */}
+        {items
+          .filter((it) => it.type === "course")
+          .map((it) => {
+            const ty = it.y + 30;
+            const d =
+              it.side === "left"
+                ? `M50 ${ty + 40} C 50 ${ty + 10}, 46 ${ty}, 44 ${ty}`
+                : `M50 ${ty + 40} C 50 ${ty + 10}, 54 ${ty}, 56 ${ty}`;
+            return <path key={"br-" + it.key} d={d} className="branch-glow" style={{ fill: "none", stroke: "#a58bdc", strokeWidth: 9, strokeLinecap: "round" }} />;
+          })}
+      </svg>
+
+      <div className="tree-anchor top-anchor">التفوق</div>
+      <div className="tree-anchor bottom-anchor" style={{ top: H - 48 }}>بداية المسار</div>
+
+      {items.map((it) =>
+        it.type === "stage" ? (
+          <button
+            key={it.key}
+            type="button"
+            className={"stage-btn" + (it.passed ? " passed" : "") + (!it.ready ? " locked" : "")}
+            style={{ top: it.y }}
+            onClick={() => {
+              if (it.ready && !it.passed) {
+                onPick({ title: stageKeyOf(it.level), label: "اختبار مرحلة " + it.level, test: stageTests[track][it.level] });
+              }
+            }}
+          >
+            {it.passed ? "✓ اختبار " + it.level : it.ready ? "🎯 اختبار " + it.level : "🔒 اختبار " + it.level}
+          </button>
+        ) : it.type === "level" ? (
+          <div
+            key={it.key}
+            id={"lv-" + it.label}
+            className={"tree-level-name tree-level-abs" + (it.locked ? " locked" : "")}
+            style={{ top: it.y }}
+          >
+            {it.locked ? "🔒 " : ""}{it.label}
+            {it.locked && <span className="locked-note">اجتياز المرحلة اللي قبلها شرط لفتحها</span>}
+          </div>
+        ) : (
+          <div
+            key={it.key}
+            className={"tree-node-abs " + it.side + (done.includes(it.c.title) ? " is-done" : "") + (lockedSet.has(it.c.title) ? " is-locked" : "")}
+            style={{ top: it.y }}
+          >
+            <button
+              type="button"
+              className={"tree-course" + (done.includes(it.c.title) ? " is-done" : "")}
+              onClick={() => { if (!lockedSet.has(it.c.title)) onPick(it.c); }}
+            >
+              <span className="tree-icon">{lockedSet.has(it.c.title) ? "🔒" : TREE_ICONS[it.level] || "📘"}</span>
+              <span className="tree-title">
+                {done.includes(it.c.title) ? "✓ " : ""}{it.c.title}
+              </span>
+              <span className="tree-bar">
+                <span style={{ width: done.includes(it.c.title) ? "100%" : "0%" }} />
+              </span>
+              <span className="tree-pct">{done.includes(it.c.title) ? "100%" : "0%"}</span>
+              {next && next.title === it.c.title && <span className="tree-next">التالي</span>}
+            </button>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+function findCourse(title) {
+  for (const k of Object.keys(tracks)) {
+    const c = tracks[k].find((x) => x.title === title);
+    if (c) return c;
+  }
+  return null;
+}
+
+/* تقدم المسار: عدد الكورسات اللي اتعملت */
+function TrackProgress({ courses, done }) {
+  if (!courses || courses.length === 0) return null;
+  const total = courses.length;
+  const finished = courses.filter((c) => done.includes(c.title)).length;
+  const pct = Math.round((finished / total) * 100);
+  return (
+    <div className="track-progress">
+      <p>تم إنهاء {finished} من {total} كورسات</p>
+      <div className="track-bar"><span style={{ width: pct + "%" }} /></div>
+    </div>
+  );
+}
+
+function readRoute() {
+  return window.location.hash.replace(/^#\/?/, "");
+}
+
+/* شارات الإنجاز: كل كورس بيخلص يطلع له شارة، والمسار كله يطلع له شارة كبيرة */
+function earnedBadges(trackTitle, courses, done) {
+  const list = courses || [];
+  const badges = list
+    .filter((c) => done.includes(c.title))
+    .map((c) => ({ key: "c-" + c.title, label: "🏅 محترف " + (c.badge || c.title) }));
+  if (list.length > 0 && list.every((c) => done.includes(c.title))) {
+    badges.push({ key: "track-" + trackTitle, label: "🏆 محترف " + trackTitle });
+  }
+  return badges;
+}
+
+/* احتفال بسيط لما المسار يوصل 100% */
+function Celebration() {
+  const pieces = Array.from({ length: 28 });
+  return (
+    <div className="confetti-wrap" aria-hidden="true">
+      {pieces.map((_, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: (i * 37) % 100 + "%",
+            animationDelay: (i % 7) * 0.2 + "s",
+            background: ["#a58bdc", "#3b2a6b", "#ede7f8", "#f5c542"][i % 4],
+          }}
+        />
+      ))}
+      <p className="celebrate-text">🎉 تم إنهاء المسار كله!</p>
+    </div>
+  );
+}
+
+function readJSON(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+/* إشعارات: الردود الجديدة على أسئلة المتعلم */
+function NotificationsBox({ user }) {
+  const [mine, setMine] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [seen, setSeen] = useState(() => readJSON("afaq-seen", {}));
+
+  // أسئلة المستخدم
+  useEffect(() => {
+    if (!user) {
+      setMine([]);
+      return;
+    }
+    const q = query(collection(db, "questions"), where("uid", "==", user.uid), limit(30));
+    return onSnapshot(q, (snap) =>
+      setMine(snap.docs.map((d) => ({ id: d.id, title: d.data().title || "" })))
+    );
+  }, [user]);
+
+  // عدد الردود على كل سؤال
+  const idsKey = mine.map((m) => m.id).join(",");
+  useEffect(() => {
+    const unsubs = mine.map((m) =>
+      onSnapshot(collection(db, "questions", m.id, "replies"), (snap) =>
+        setCounts((prev) => ({ ...prev, [m.id]: snap.size }))
+      )
+    );
+    return () => unsubs.forEach((u) => u());
+  }, [idsKey]);
+
+  // أول مرة نشوف سؤال: نعتبر الردود الموجودة مقروءة
+  useEffect(() => {
+    const updates = {};
+    mine.forEach((m) => {
+      if (seen[m.id] === undefined && counts[m.id] !== undefined) updates[m.id] = counts[m.id];
+    });
+    if (Object.keys(updates).length) {
+      const next = { ...seen, ...updates };
+      setSeen(next);
+      try {
+        localStorage.setItem("afaq-seen", JSON.stringify(next));
+      } catch (e) {}
+    }
+  }, [counts, mine]);
+
+  function markSeen(id) {
+    const next = { ...seen, [id]: counts[id] || 0 };
+    setSeen(next);
+    try {
+      localStorage.setItem("afaq-seen", JSON.stringify(next));
+    } catch (e) {}
+  }
+
+  if (!user) {
+    return <p className="notif-empty">يمكنك تسجيل الدخول لاستقبال إشعارات الردود على أسئلتك.</p>;
+  }
+
+  const fresh = mine
+    .map((m) => ({ ...m, unseen: (counts[m.id] || 0) - (seen[m.id] || 0) }))
+    .filter((m) => m.unseen > 0);
+
+  return (
+    <div className="notif-box">
+      <p className="dash-sub">الإشعارات</p>
+      {fresh.length === 0 && <p className="notif-empty">لا توجد ردود جديدة.</p>}
+      {fresh.map((m) => (
+        <a key={m.id} href="#/forum" className="notif-item" onClick={() => markSeen(m.id)}>
+          💬 ردّ جديد على: {m.title} ({m.unseen})
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/* كارت الكود: الكود والنتيجة بيظهروا بس لما تضغطي عليه */
+function CodeCard() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="side-card code-card">
+      <button type="button" className="code-card-btn" onClick={() => setOpen(!open)}>
+        🧪 تجربة الكود {open ? "▲" : "▼"}
+      </button>
+      {open && <CodeBox />}
+    </div>
+  );
+}
+
+/* زرار ☰: بيفتح حساب المتعلم، وجواه الإشعارات والشارات وتسجيل الخروج */
+function StudentPanel({ track, courses, done, user }) {
+  const [open, setOpen] = useState(false);
+  const [sub, setSub] = useState(null); // null | "notif" | "badges"
+  const wrapRef = useRef(null);
+
+  // يقفل لما تضغطي بره القايمة، أو على Escape
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const badges = earnedBadges(track, courses, done);
+  const trackName = languages.find((l) => l.key === track) ? "اللغات" : TRACK_TITLES[track] || "";
+
+  return (
+    <div className="acc-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className="acc-menu-btn acc-toggle"
+        aria-label="القايمة"
+        onClick={() => {
+          setOpen(!open);
+          setSub(null);
+        }}
+      >
+        ☰
+      </button>
+
+      {open && (
+        <div className="side-card">
+          <div className="side-card-head">
+            <strong>القايمة</strong>
+            <button type="button" className="side-close" aria-label="إغلاق" onClick={() => setOpen(false)}>✕</button>
+          </div>
+          <p className="forum-meta">
+            {user ? "أهلاً " + (user.displayName || "") : "يمكنك تسجيل الدخول لحفظ التقدم"}
+          </p>
+          <p className="forum-meta">المسار: {trackName}</p>
+
+          <div className="acc-menu">
+            <button type="button" onClick={() => setSub(sub === "notif" ? null : "notif")}>🔔 الإشعارات</button>
+            <button type="button" onClick={() => setSub(sub === "badges" ? null : "badges")}>🏅 الشارات</button>
+            <button type="button" onClick={() => setSub(sub === "pairs" ? null : "pairs")}>🤝 زميل الرحلة</button>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  const cur = localStorage.getItem("afaq-climber") || "girl";
+                  localStorage.setItem("afaq-climber", cur === "boy" ? "girl" : "boy");
+                  window.dispatchEvent(new Event("afaq-climber-change"));
+                } catch (e) {}
+              }}
+            >
+              🧗 تغيير الشخصية
+            </button>
+            {user && (
+              <button type="button" onClick={() => signOut(auth)}>🚪 تسجيل الخروج</button>
+            )}
+          </div>
+
+          {sub === "notif" && <NotificationsBox user={user} />}
+          {sub === "pairs" && <PairsPanel user={user} />}
+          {sub === "badges" && (
+            <div className="badge-list">
+              {badges.length === 0 && <p className="forum-meta">الشارات هتظهر هنا عند إنهاء أي كورس.</p>}
+              {badges.map((b) => (
+                <span key={b.key} className="badge-chip">{b.label}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* مجتمع تليجرام لكل قسم */
+function TelegramCard() {
+  return (
+    <div className="side-card">
+      <h4>مجتمع آفاق على تليجرام</h4>
+      <p className="forum-meta">تابع الأخبار وشارك مع الآخرين.</p>
+      <a className="quiz-btn" href={TELEGRAM_LINK} target="_blank" rel="noreferrer">انضم للمجتمع 🚀</a>
+    </div>
+  );
+}
+
+/* لوحة المتصدرين */
+function Leaderboard({ user }) {
+  const [rows, setRows] = useState([]);
+  const [err, setErr] = useState(false);
+  useEffect(() => {
+    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(20));
+    return onSnapshot(
+      q,
+      (snap) => setRows(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      () => setErr(true)
+    );
+  }, []);
+  if (err) return <p className="forum-error">تعذّر تحميل المتصدرين. حدّث الصفحة وحاول مرة أخرى.</p>;
+  if (rows.length === 0) return <p className="tree-empty">لسه مفيش متصدرين. أول إنجاز بيفتح الترتيب.</p>;
+  return (
+    <div className="lb-list">
+      {rows.map((r, i) => (
+        <div key={r.id} className={"lb-row" + (user && user.uid === r.id ? " me" : "")}>
+          <span className="lb-rank">{i + 1}</span>
+          <span className="lb-name">{r.name}{user && user.uid === r.id ? " (أنت)" : ""}</span>
+          <span className="lb-score">{r.score} كورس</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* هيدر القسم: ألوان الغروب (بتكمل الهيرو) + النقاط + الارتفاع + المستويات */
+function SectionHeader({ title, courses, done, onSelect }) {
+  const list = courses || [];
+  const total = list.length;
+  const finished = list.filter((c) => done.includes(c.title)).length;
+  const pct = total ? Math.round((finished / total) * 100) : 0;
+  const xp = finished * 10;
+  const levels = LEVELS.map((lv, i) => {
+    const inLevel = list.filter((c) => c.level === lv);
+    const prev = i === 0 ? [] : list.filter((c) => c.level === LEVELS[i - 1]);
+    const open = i === 0 || (prev.length > 0 && prev.every((c) => done.includes(c.title)));
+    return { lv, open, has: inLevel.length > 0 };
+  });
+  const goTo = (lv) => {
+    if (onSelect) onSelect(lv);
+  };
+  return (
+    <div className="sec-header">
+      <span className="sec-kicker">رحلة الصعود لقمة آفاق</span>
+      <h2 className="sec-title">{title}</h2>
+      <div className="sec-stats">
+        <div className="sec-stat"><span>النقاط</span><strong>{xp} XP</strong></div>
+        <div className="sec-stat"><span>الارتفاع</span><strong>{pct}m</strong></div>
+        <button type="button" className="sec-sound" disabled title="قريباً">🔊</button>
+      </div>
+      <div className="sec-levels">
+        {levels.map((l, i) => (
+          <button
+            key={l.lv}
+            type="button"
+            className={"sec-level" + (l.open ? "" : " locked") + (!l.has ? " empty" : "")}
+            disabled={!l.open || !l.has}
+            onClick={() => goTo(l.lv)}
+          >
+            <span className="sec-level-num">{i + 1}</span>
+            <span>{l.lv}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===== الجبل: المسار + فقاعات المستويات + فقاعات الكورسات + الشخصية ===== */
+const PATH = [
+  { x: 18, y: 78 },
+  { x: 40, y: 62 },
+  { x: 68, y: 36 },
+  { x: 82, y: 20 },
+];
+const mix = (p, q, f) => ({ x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f });
+
+function MountainView({ courses, done, onPick, level, onLevel, climber, onClimber, track, user, trackLabel, approved }) {
+  const [shown, setShown] = useState(null);
+  const [projOpen, setProjOpen] = useState(null);
+  const levelsInOrder = LEVELS.filter((lv) => (courses || []).some((c) => c.level === lv));
+  const idx = Math.max(0, LEVELS.indexOf(level));
+  const isOpenLevel = (i) => {
+    if (i === 0) return true;
+    const prev = (courses || []).filter((c) => c.level === LEVELS[i - 1]);
+    const prevProject = projects[track]?.[LEVELS[i - 1]];
+    const projectOk = !prevProject || (approved && approved.has(LEVELS[i - 1]));
+    return prev.length > 0 && prev.every((c) => done.includes(c.title)) && projectOk;
+  };
+  const inLevel = (courses || []).filter((c) => c.level === level);
+  const ordered = LEVELS.flatMap((lv) => (courses || []).filter((c) => c.level === lv));
+  const locked = new Set();
+  ordered.forEach((c, i) => {
+    if (i > 0 && !done.includes(ordered[i - 1].title) && !done.includes(c.title)) locked.add(c.title);
+  });
+  const seq = [];
+  inLevel.forEach((c) => {
+    seq.push({ kind: "course", key: "c-" + c.title, c, done: done.includes("started::" + c.title) });
+    if (c.test && c.test.length > 0) {
+      seq.push({ kind: "test", key: "t-" + c.title, c, done: done.includes(c.title) });
+    }
+  });
+  const levelProject = projects[track]?.[level];
+  if (levelProject && inLevel.length > 0) {
+    seq.push({ kind: "project", key: "p-" + level, c: inLevel[inLevel.length - 1], done: !!(approved && approved.has(level)) });
+  }
+  const nextTitle = ordered.find((c) => !done.includes(c.title) && !locked.has(c.title))?.title;
+  const segFrom = PATH[idx];
+  const segTo = PATH[idx + 1] || PATH[idx];
+  const n = inLevel.length;
+  const courseAt = (j) => {
+    const p = mix(segFrom, segTo, (j + 1) / (n + 1));
+    return { x: p.x + (j % 2 === 0 ? -5 : 5), y: p.y };
+  };
+  const doneHere = inLevel.filter((c) => done.includes(c.title)).length;
+  const climberPos = doneHere === 0 ? segFrom : courseAt(Math.min(doneHere, n) - 1);
+
+  return (
+    <div className="mtn-wrap">
+      <img className="mtn-bg" src="/mountain.jpg" alt="" />
+      <svg className="mtn-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points={PATH.map((p) => p.x + "," + p.y).join(" ")} className="mtn-path-glow" />
+        <polyline points={PATH.map((p) => p.x + "," + p.y).join(" ")} className="mtn-path-line" />
+      </svg>
+
+      {PATH.slice(0, 3).map((p, i) => {
+        const open = isOpenLevel(i);
+        if (shown && shown !== LEVELS[i]) return null;
+        const pos = i === 2 ? PATH[3] : p;
+        return (
+          <button
+            key={LEVELS[i]}
+            type="button"
+            className={"mtn-level" + (i === idx ? " active" : "") + (open ? "" : " locked") + (i === 2 ? " summit" : "")}
+            style={{ left: pos.x + "%", top: pos.y + "%" }}
+            disabled={!open}
+            onClick={() => {
+              setShown(shown === LEVELS[i] ? null : LEVELS[i]);
+              onLevel(LEVELS[i]);
+            }}
+          >
+            <span className="mtn-level-num">{i === 2 ? "🏁" : i + 1}</span>
+            <span className="mtn-level-name">{LEVELS[i]}</span>
+          </button>
+        );
+      })}
+
+      {shown && (
+        <button type="button" className="mtn-back" onClick={() => setShown(null)}>
+          ⬅ كل المستويات
+        </button>
+      )}
+
+      {shown === level && (
+        <div className="mtn-panel" style={{ left: climberPos.x <= 50 ? "46%" : "2%" }}>
+          {seq.map((it, k) => {
+            const prevDone = k === 0 || seq[k - 1].done;
+            const isLockedItem = !it.done && !prevDone;
+            const isNextItem = !it.done && prevDone;
+            return (
+              <button
+                key={it.key}
+                type="button"
+                className={"mtn-capsule" + (it.kind === "test" ? " test" : "") + (it.done ? " done" : "") + (isLockedItem ? " locked" : "") + (isNextItem ? " next" : "")}
+                onClick={() => {
+                  if (isLockedItem) return;
+                  if (it.kind === "project") setProjOpen(level);
+                  else onPick(it.c);
+                }}
+              >
+                <span className="mtn-capsule-icon">{it.kind === "project" ? "🛠️" : it.kind === "test" ? "🧪" : it.done ? "✓" : isLockedItem ? "🔒" : "◉"}</span>
+                <span className="mtn-capsule-text">{it.kind === "project" ? "مشروع " + level : it.kind === "test" ? "اختبار: " + it.c.title : it.c.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {projOpen && projects[track]?.[projOpen] && user && (
+        <div className="project-overlay">
+          <ProjectBox
+            user={user}
+            track={track}
+            trackLabel={trackLabel}
+            level={projOpen}
+            project={projects[track][projOpen]}
+            approved={approved || new Set()}
+            onClose={() => setProjOpen(null)}
+          />
+        </div>
+      )}
+      {ordered.length > 0 && ordered.filter((c) => done.includes(c.title)).length / ordered.length >= 0.5 && (
+        <span className="mtn-fireworks" style={{ left: Math.min(climberPos.x + 8, 90) + "%", top: Math.max(climberPos.y - 26, 4) + "%" }}>
+          🎆
+        </span>
+      )}
+      <img
+        className="mtn-climber"
+        src={climber === "boy" ? "/climber-boy.png" : "/climber-girl.png"}
+        alt=""
+        style={{ left: climberPos.x + "%", top: climberPos.y + "%" }}
+      />
+
+      <button
+        type="button"
+        className="mtn-switch"
+        onClick={() => onClimber(climber === "boy" ? "girl" : "boy")}
+        style={{ display: "none" }}
+      >
+        {climber === "boy" ? "🧗 ولد" : "🧗 بنت"}
+      </button>
+    </div>
+  );
+}
+
+/* صفحة كاملة لكل مسار / للغات / للمنتدى */
+function PageView({ route, done, onPick, user }) {
+  const [activeLevel, setActiveLevel] = useState(LEVELS[0]);
+  const approvedLevels = useApprovedLevels(user, route);
+  const [climber, setClimber] = useState(() => {
+    try {
+      return localStorage.getItem("afaq-climber") || "girl";
+    } catch (e) {
+      return "girl";
+    }
+  });
+  const [chosen, setChosen] = useState(() => {
+    try {
+      return localStorage.getItem("afaq-climber-chosen") === "1";
+    } catch (e) {
+      return false;
+    }
+  });
+  function startJourney() {
+    try {
+      localStorage.setItem("afaq-climber-chosen", "1");
+    } catch (e) {}
+    setChosen(true);
+  }
+  useEffect(() => {
+    const sync = () => {
+      try {
+        setClimber(localStorage.getItem("afaq-climber") || "girl");
+      } catch (e) {}
+    };
+    window.addEventListener("afaq-climber-change", sync);
+    return () => window.removeEventListener("afaq-climber-change", sync);
+  }, []);
+  function chooseClimber(v) {
+    setClimber(v);
+    try {
+      localStorage.setItem("afaq-climber", v);
+    } catch (e) {}
+  }
+  const back = (
+    <a href="#" className="page-back" onClick={() => window.scrollTo(0, 0)}>
+      الرجوع للرئيسية
+    </a>
+  );
+
+  if (route.startsWith("verify/")) {
+    return (
+      <section className="page">
+        {back}
+        <VerifyPage code={route.slice(7)} />
+      </section>
+    );
+  }
+
+  if (route === "admin") {
+    return (
+      <section className="page">
+        {back}
+        <AdminPage user={user} />
+      </section>
+    );
+  }
+
+  if (route.startsWith("u/")) {
+    return (
+      <section className="page">
+        {back}
+        <UserProfile uid={route.slice(2)} />
+      </section>
+    );
+  }
+
+  if (route === "leaderboard") {
+    return (
+      <section className="page">
+        {back}
+        <h2>المتصدرين</h2>
+        <Leaderboard user={user} />
+      </section>
+    );
+  }
+
+  if (route === "forum") {
+    return (
+      <section className="page">
+        {back}
+        <h2>المنتدى</h2>
+        <p className="forum-intro">يمكنك كتابة السؤال والكود (اختياري)، والرد يوصل لصاحب السؤال.</p>
+        <Forum />
+      </section>
+    );
+  }
+
+  if (route === "podcast" || route === "platforms") {
+    const items = resources[route] || [];
+    const pageTitle = route === "podcast" ? "بودكاست" : "منصات للتدريب العملي للبرمجة";
+    return (
+      <section className="page">
+        {back}
+        <h2>{pageTitle}</h2>
+        {items.length === 0 ? (
+          <p className="tree-empty">قريباً 🌱</p>
+        ) : (
+          <div className="resource-list">
+            {items.map((r) => (
+              <a key={r.title} className="resource-item" href={r.href} target="_blank" rel="noreferrer">
+                <strong>{r.title}</strong>
+                {r.desc && <span>{r.desc}</span>}
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (route === "languages") {
+    return (
+      <section className="page">
+        {back}
+        <h2>اللغات</h2>
+        <div className="lang-grid">
+          {languages.map((l) => (
+            <a key={l.key} href={"#/" + l.key} className="lang-item">{l.title}</a>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  const lang = languages.find((l) => l.key === route);
+  const title = lang ? "اللغات" : TRACK_TITLES[route];
+  if (!title) return null;
+  return (
+    <section className="page">
+      <SectionHeader title={title} courses={tracks[route]} done={done} onSelect={setActiveLevel} />
+      <CertRequestCard
+        user={user}
+        track={route}
+        ready={
+          (tracks[route] || []).length > 0 &&
+          (tracks[route] || []).every((c) => done.includes(c.title)) &&
+          Object.keys(projects[route] || {}).every((lv) => approvedLevels.has(lv))
+        }
+      />
+      <div className="track-layout">
+        <div className="track-main">
+          <TrackProgress courses={tracks[route]} done={done} />
+          {tracks[route] && tracks[route].length > 0 &&
+            tracks[route].every((c) => done.includes(c.title)) && <Celebration />}
+          {!chosen && (
+            <div className="climber-intro">
+              <h3>رحلتك في آفاق تبدأ من هنا ✨</h3>
+              <p>كل رحلة عظيمة بتبدأ بخطوة، والنهارده دي رحلتك أنت!</p>
+              <p>اختر الشخصية اللي ترافق رحلتك التعليمية.</p>
+              <div className="climber-choices">
+                <button
+                  type="button"
+                  className={"climber-choice" + (climber === "girl" ? " selected" : "")}
+                  onClick={() => chooseClimber("girl")}
+                >
+                  <span className="climber-emoji">👩</span>
+                  <span>شخصية البنت</span>
+                </button>
+                <button
+                  type="button"
+                  className={"climber-choice" + (climber === "boy" ? " selected" : "")}
+                  onClick={() => chooseClimber("boy")}
+                >
+                  <span className="climber-emoji">🧑</span>
+                  <span>شخصية الولد</span>
+                </button>
+              </div>
+              <p className="climber-note">يمكنك تغيير الاختيار في أي وقت.</p>
+              <button type="button" className="climber-start" onClick={startJourney}>
+                يلا نبدأ رحلتنا 🚀
+              </button>
+            </div>
+          )}
+
+          <MountainView
+            courses={tracks[route]}
+            done={done}
+            onPick={onPick}
+            level={activeLevel}
+            onLevel={setActiveLevel}
+            climber={climber}
+            onClimber={chooseClimber}
+            track={route}
+            user={user}
+            trackLabel={TRACK_TITLES[route]}
+            approved={approvedLevels}
+          />
+          <div className="track-bottom">
+            <div>{route === "programming" && <CodeCard />}</div>
+            <div><TelegramCard /></div>
+          </div>
+        </div>
+        <aside className="track-side">
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+export default function App() {
+  const [dialog, setDialog] = useState(null); // "about" | "english" | "german" | null
+  const [course, setCourse] = useState(null);
+  const [courseBack, setCourseBack] = useState(null);
+  const [pending, setPending] = useState(() => {
+    try {
+      return localStorage.getItem("afaq-pending") || "";
+    } catch (e) {
+      return "";
+    }
+  });
+  // لما الطالب يرجع للموقع بعد ما فتح الكورس، نفتح كارت الكورس تاني عشان يعلّمه
+  useEffect(() => {
+    function onBack() {
+      if (document.visibilityState !== "visible") return;
+      let title = "";
+      try {
+        title = localStorage.getItem("afaq-pending") || "";
+      } catch (e) {}
+      const c = title ? findCourse(title) : null;
+      if (!c) return;
+      setPending(title);
+      setCourse(c);
+      setCourseBack(null);
+      setDialog("course");
+    }
+    document.addEventListener("visibilitychange", onBack);
+    return () => document.removeEventListener("visibilitychange", onBack);
+  }, []);
+  const [done, setDone] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("afaq-done") || "[]");
+    } catch (e) {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("afaq-done", JSON.stringify(done));
+    } catch (e) {}
+  }, [done]);
+  const [user, setUser] = useState(null);
+  const [doneReady, setDoneReady] = useState(false);
+  useEffect(() => onAuthStateChanged(auth, (u) => setUser(u)), []);
+  // الكورسات المكتملة متزامنة على كل الأجهزة: أي تغيير يظهر فوراً
+  const remoteDone = useRef(null);
+  useEffect(() => {
+    if (!user) {
+      remoteDone.current = null;
+      return;
+    }
+    let first = true;
+    const unsub = onSnapshot(
+      doc(db, "users", user.uid),
+      (snap) => {
+        const remote = snap.exists() ? snap.data().done || [] : [];
+        if (first) {
+          first = false;
+          // أول مرة: ندمج اللي على الجهاز مع اللي على الحساب
+          setDone((prev) => Array.from(new Set([...prev, ...remote])));
+        } else {
+          setDone(remote);
+        }
+        remoteDone.current = JSON.stringify(remote);
+        setDoneReady(true);
+      },
+      () => setDoneReady(true)
+    );
+    return unsub;
+  }, [user]);
+
+  // أي تغيير على الجهاز يتحفظ فوراً على الحساب (لو مختلف عن اللي محفوظ)
+  useEffect(() => {
+    if (!user || !doneReady) return;
+    const key = JSON.stringify(done);
+    if (key === remoteDone.current) return;
+    remoteDone.current = key;
+    saveUserData(user.uid, { done }).catch(() => {});
+    saveLeaderboard(user.uid, user.displayName || "مستخدم", done.length).catch(() => {});
+  }, [done, user, doneReady]);
+  function startCourse(c) {
+    const key = "started::" + c.title;
+    if (!done.includes(key)) setDone((prev) => [...prev, key]);
+    try {
+      localStorage.setItem("afaq-pending", c.title);
+    } catch (e) {}
+    setPending(c.title);
+    if (c.href) window.open(c.href, "_blank", "noopener");
+  }
+  function toggleDone(title) {
+    try {
+      if (localStorage.getItem("afaq-pending") === title) localStorage.removeItem("afaq-pending");
+    } catch (e) {}
+    setPending("");
+    setDone((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
+  }
+  const [route, setRoute] = useState(readRoute);
+  useEffect(() => {
+    const onHash = () => setRoute(readRoute());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const PAGE_ROUTES = ["forum", "leaderboard", "languages", "podcast", "platforms", ...Object.keys(TRACK_TITLES), ...languages.map((l) => l.key)];
+  const isPage = PAGE_ROUTES.includes(route) || route.startsWith("u/");
+  function go(r) {
+    window.location.hash = r ? "/" + r : "";
+    window.scrollTo(0, 0);
+  }
+  function pick(c) {
+    setCourse(c);
+    setCourseBack(dialog);
+    setDialog("course");
+  }
+  const close = () => setDialog(null);
+
+  return (
+    <>
+      <header className="header">
+        <div className="logo-stack">
+          <div className="logo">آفاق</div>
+          {isPage && tracks[route] && <a href="#" className="page-home-link">الرئيسية</a>}
+        </div>
+        {isPage && tracks[route] ? (
+          <div className="page-header-actions">
+            <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
+          </div>
+        ) : (
+          <nav className="navbar">
+            <a href="#" className="active">الرئيسية</a>
+            <a href="#learning">الكورسات</a>
+            <a href="#resources">الموارد المجانية</a>
+            {!isPage && (
+  <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
+            )}
+          </nav>
+        )}
+      </header>
+
+      <PairsWatcher user={user} />
+      {isPage && <PageView route={route} done={done} onPick={pick} user={user} />}
+
+      {!isPage && (
+        <>
+      <OwnerCard user={user} />
+      <section className="hero">
+        <img className="hero-img" src="/hero.jpg" alt="" />
+        <div className="hero-content">
+          <h1>مرحباً بكم في آفاق</h1>
+          <h2>حلمك مش بعيد ..<br />خطوتك الأولى تبدأ من هنا.</h2>
+          <p>منصة تؤهلك من الصفر بمسار<br />احترافي، عملي وواضح.</p>
+          <a href="#quiz-section" className="hero-button">ابدأ التعلم ←</a>
+        </div>
+      </section>
+
+      <Quiz user={user} />
+
+
+      <section className="learning" id="learning">
+        <h2>التعلم وتطوير المهارات</h2>
+        <div className="title-line"></div>
+        <div className="cards">
+          <div className="card">
+            <Icon color="purple" src="/icon-paths.png" alt="مسارات تعليمية" fallback="📖" />
+            <h3>مسارات تعليمية</h3>
+            <p>اكتشف مسارك المناسب<br />لمستقبلك.</p>
+          </div>
+
+          <div className="card clickable" id="languages" onClick={() => go("languages")}>
+            <Icon color="green" src="/icon-languages.png" alt="اللغات" fallback="🌎" />
+            <h3>اللغات</h3>
+            <p>طور لغتك وكن أقرب<br />لفرص أفضل.</p>
+          </div>
+
+          <div className="card clickable" id="card-programming" onClick={() => go("programming")}>
+            <Icon color="blue" src="/icon-programming.png" alt="برمجة" fallback="💻" />
+            <h3>برمجة</h3>
+            <p>تعلم أساسيات البرمجة<br />واصنع مشروعك الخاص.</p>
+          </div>
+
+          <div className="card clickable" id="card-marketing" onClick={() => go("marketing")}>
+            <Icon color="pink" src="/icon-marketing.png" alt="التسويق" fallback="📣" />
+            <h3>التسويق</h3>
+            <p>اكتسب مهارات التسويق الرقمي<br />وابني علامتك الخاصة.</p>
+          </div>
+
+          <div className="card clickable" id="card-design" onClick={() => go("design")}>
+            <Icon color="orange" src="/icon-design.png" alt="تصميم" fallback="🎨" />
+            <h3>تصميم</h3>
+            <p>تعلم أساسيات التصميم<br />وحوّل أفكارك إلى أعمال جذابة.</p>
+          </div>
+
+          <div className="card clickable" id="card-data" onClick={() => go("data")}>
+            <Icon color="teal" src="/icon-data.png" alt="تحليل البيانات" fallback="📊" />
+            <h3>تحليل البيانات</h3>
+            <p>بداية الرحلة مع البيانات<br />وتحويلها إلى قرارات واضحة.</p>
+          </div>
+
+          <div className="card clickable" id="card-ai" onClick={() => go("ai")}>
+            <Icon color="purple" src="/icon-ai.png" alt="الذكاء الاصطناعي" fallback="🤖" />
+            <h3>الذكاء الاصطناعي</h3>
+            <p>تعرّف على الذكاء الاصطناعي<br />واستخدمه في شغلك ودراستك.</p>
+          </div>
+
+          <div className="card clickable" id="card-cyber" onClick={() => go("cyber")}>
+            <Icon color="gray" src="/icon-cyber.png" alt="الأمن السيبراني" fallback="🛡️" />
+            <h3>الأمن السيبراني</h3>
+            <p>احمِ نفسك وبياناتك<br />وتعلم أساسيات الحماية الرقمية.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="learning" id="resources">
+        <h2>مصادر تعليمية</h2>
+        <div className="title-line"></div>
+        <div className="cards">
+          <div className="card clickable" onClick={() => go("platforms")}>
+            <Icon color="blue" src="/icon-platforms.png" alt="منصات للتدريب العملي للبرمجة" fallback="💻" />
+            <h3>منصات للتدريب العملي للبرمجة</h3>
+          </div>
+          <div className="card clickable" onClick={() => go("forum")}>
+            <Icon color="pink" src="/icon-community.png" alt="مجتمعات ومنتديات" fallback="💬" />
+            <h3>مجتمعات ومنتديات للنقاش وحل المشاكل</h3>
+          </div>
+          <div className="card clickable" onClick={() => go("podcast")}>
+            <Icon color="purple" src="/icon-podcast.png" alt="بودكاست" fallback="🎧" />
+            <h3>بودكاست </h3>
+          </div>
+        </div>
+      </section>
+
+      <Modal open={dialog === "about"} onClose={close} title="من نحن" className="about-dialog">
+        <p>{ABOUT_TEXT}</p>
+      </Modal>
+
+
+      <footer className="site-footer">
+        <p className="footer-title">🚀 آفاق</p>
+        <p className="footer-sub">دليلك لاكتشاف مسارك المهني</p>
+
+        <div className="footer-row footer-row-first">
+          <a href="https://mail.google.com/mail/?view=cm&to=ayamahmoud.gruop@gmail.com" target="_blank" rel="noreferrer" className="footer-link">تواصل معنا</a>
+          <a href="https://www.instagram.com/aya__mahmoud188?stkn=NDFoNGhpejRldm9x" target="_blank" rel="noreferrer" className="footer-insta" aria-label="انستجرام">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="6"></rect>
+              <circle cx="12" cy="12" r="5"></circle>
+              <circle cx="17.5" cy="6.5" r="1.2" fill="white" stroke="none"></circle>
+            </svg>
+          </a>
+        </div>
+
+        <div className="footer-row">
+          <a href="#quiz" className="footer-cta footer-cta-quiz">جرب الاختبار</a>
+          <a href="https://wa.me/201105371577?text=السلام%20عليكم%20آية%20حابب%20اطلب%20موقع%20🚀%0Aنوع%20الموقع:%0Aالميزانية:" target="_blank" rel="noreferrer" className="footer-cta footer-cta-wa">اطلب موقع 🚀</a>
+        </div>
+
+        <p className="footer-note">
+          AMG | Aya Mahmoud Group Digital Projects • Creative Work •<br />
+          Ideas Building something new, one project at a time. © 2026<br />
+          جميع الحقوق محفوظة لـ AMG
+        </p>
+      </footer>
+        </>
+      )}
+
+      <Modal open={dialog === "course"} onClose={close} title={course ? course.label || course.title : ""}>
+        {course && (
+          <div className="course-card">
+            <p className="course-level">{course.level}</p>
+            <p>{course.desc || "وصف الكورس هيتضاف قريباً."}</p>
+            <button type="button" className="quiz-btn start-course" onClick={() => startCourse(course)}>ابدأ الكورس</button>
+            {course.exercise && (
+              <>
+                <h4>تمرين</h4>
+                <p>{course.exercise}</p>
+              </>
+            )}
+            {pending === course.title && !done.includes(course.title) && course.test && course.test.length > 0 && (
+              <p className="forum-meta">رجعت من الكورس؟ يمكنك تعليمه كمكتمل بعد الانتهاء منه.</p>
+            )}
+            {course.test && course.test.length > 0 && !done.includes(course.title) ? (
+              <CourseQuiz course={course} onPass={() => toggleDone(course.title)} />
+            ) : done.includes(course.title) ? (
+              <button type="button" className="quiz-btn ghost" onClick={() => toggleDone(course.title)}>
+                ✓ تم الإنهاء (اضغط مرة أخرى للتراجع)
+              </button>
+            ) : (
+              <p className="forum-meta">الاختبار قريباً 🧪 لازم تنجحي فيه عشان الكورس اللي بعده يتفتح.</p>
+            )}
+            <p className="forum-meta">بعد إنهاء الكورس، يمكنك تعليمه كمكتمل.</p>
+            <button type="button" className="quiz-btn ghost" onClick={() => setDialog(courseBack)}>رجوع</button>
+          </div>
+        )}
+      </Modal>
+    </>
+  );
+}
