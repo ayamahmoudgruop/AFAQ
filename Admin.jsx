@@ -132,7 +132,16 @@ export function OwnerCard({ user }) {
     );
   }, [role]);
 
-  if (role !== "owner") return null;
+  // تشخيص مؤقت: يوضح الحساب الداخل ولو مش مسجل كمالكة
+  if (role !== "owner") {
+    if (!user) return null;
+    return (
+      <div className="owner-card">
+        <strong>الحساب الداخل: {user.uid}</strong>
+        <p className="forum-meta">{role === "" ? "الحساب ده مش مسجل كمالكة (أو القواعد مش منشورة)." : ""}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="owner-card">
