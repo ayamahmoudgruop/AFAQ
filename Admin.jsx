@@ -120,7 +120,11 @@ export function OwnerCard({ user }) {
       setRole("");
       return;
     }
-    return onSnapshot(doc(db, "admins", user.uid), (snap) => setRole(snap.exists() ? snap.data().role || "" : ""), () => setRole(""));
+    return onSnapshot(
+      doc(db, "admins", user.uid),
+      (snap) => setRole(snap.exists() ? "OK:" + String(snap.data().role) : "NOTEXIST"),
+      (err) => setRole("ERR:" + err.code)
+    );
   }, [user]);
 
   useEffect(() => {
@@ -138,7 +142,7 @@ export function OwnerCard({ user }) {
     return (
       <div className="owner-card">
         <strong>الحساب الداخل: {user.uid}</strong>
-        <p className="forum-meta">{role === "" ? "الحساب ده مش مسجل كمالكة (أو القواعد مش منشورة)." : ""}</p>
+        <p className="forum-meta">الحالة: {role || "جاري القراءة..."}</p>
       </div>
     );
   }
