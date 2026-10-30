@@ -122,7 +122,7 @@ export function OwnerCard({ user }) {
     }
     return onSnapshot(
       doc(db, "admins", user.uid),
-      (snap) => setRole(snap.exists() ? "OK:" + String(snap.data().role) : "NOTEXIST"),
+      (snap) => setRole(snap.exists() ? String(snap.data().role ?? "") : "NOTEXIST"),
       (err) => setRole("ERR:" + err.code)
     );
   }, [user]);
