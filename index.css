@@ -2602,3 +2602,57 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 .quiz-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
 .quiz-step { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #3d3556; background: #f7f4fc; border: 0.5px solid #d8d2e3; border-radius: 12px; padding: 8px; }
 .quiz-step-num { width: 24px; height: 24px; border-radius: 50%; background: #3b2a6b; color: #ede7f8; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
+
+/* تصحيح ترتيب الاختبار: النص على الشمال (العمود الثاني في RTL)، والكارت على اليمين */
+.quiz-card > h2, .quiz-card > .quiz-subtitle, .quiz-card > input, .quiz-card > .quiz-hint, .quiz-card > .quiz-steps { grid-column: 2 !important; }
+#quiz-box { grid-column: 1 !important; grid-row: 1 / span 6 !important; }
+.quiz-card > *:not(h2):not(.quiz-subtitle):not(input):not(.quiz-hint):not(.quiz-steps):not(#quiz-box) { grid-column: 1 / -1; }
+.quiz-steps { grid-template-columns: minmax(0, 1fr); }
+.quiz-subtitle { text-align: right; }
+
+/* الاختبار: الموبايل عمود واحد (النص فوق، والكارت تحته)، والكمبيوتر واللابتوب عمودين */
+@media (max-width: 760px) {
+  .quiz-card { grid-template-columns: minmax(0, 1fr) !important; }
+  .quiz-card > * { grid-column: 1 !important; grid-row: auto !important; }
+  #quiz-box { margin-top: 12px; }
+  .quiz-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 761px) {
+  .quiz-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .quiz-step { flex-direction: column; text-align: center; font-size: 0.78rem; }
+}
+
+/* ضبط أقرب للتصميم: أسهم بين الخطوات، وكروت متراكبة أوضح، وأحجام أقرب */
+@media (min-width: 761px) {
+  .quiz-steps { position: relative; gap: 10px; }
+  .quiz-step { position: relative; background: transparent; border: none; padding: 4px; color: #3b2a6b; font-size: 0.8rem; }
+  .quiz-step:not(:last-child)::after {
+    content: "←";
+    position: absolute;
+    left: -10px;
+    top: 6px;
+    color: #a58bdc;
+    font-size: 0.9rem;
+  }
+  .quiz-step-num { width: 34px; height: 34px; font-size: 0.85rem; background: #ede7f8; color: #3b2a6b; border: 1px solid #a58bdc; }
+}
+#quiz-box::before { transform: translate(12px, 12px) rotate(2deg); }
+#quiz-box::after { transform: translate(22px, 22px) rotate(3.5deg); }
+.quiz-card > h2 { font-size: 1.6rem; }
+.quiz-card > .quiz-subtitle { font-size: 0.95rem; line-height: 1.8; }
+
+/* ترتيب الاختبار: العنوان ثم الوصف ثم الخطوات ثم الاسم، كلهم في عمود النص (على الشمال) */
+.quiz-card > h2 { grid-row: 1 !important; }
+.quiz-card > .quiz-subtitle { grid-row: 2 !important; }
+.quiz-card > .quiz-steps { grid-row: 3 !important; }
+.quiz-card > input { grid-row: 4 !important; }
+.quiz-card > .quiz-hint { grid-row: 5 !important; }
+@media (min-width: 761px) {
+  .quiz-card > h2, .quiz-card > .quiz-subtitle, .quiz-card > .quiz-steps, .quiz-card > input, .quiz-card > .quiz-hint { grid-column: 2 !important; }
+}
+
+/* المسارات: العنوان على اليمين (العمود الأول في RTL)، والصور على الشمال */
+@media (min-width: 761px) {
+  .learning .cards { grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 1fr)); }
+  .learning .card:first-child { grid-column: 1; grid-row: 1 / span 2; }
+}
