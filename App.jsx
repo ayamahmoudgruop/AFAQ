@@ -1141,7 +1141,7 @@ export default function App() {
               <div className="top-panel-head"><strong>حسابي</strong><button type="button" className="side-close" onClick={() => setTopPanel(null)}>✕</button></div>
               {user ? (
                 <>
-                  <p className="forum-meta">داخلة باسم: {user.displayName || "حسابك"}</p>
+                  <p className="forum-meta">تم التسجيل باسم {user.displayName || "حسابك"}</p>
                   <button type="button" className="quiz-btn ghost" onClick={() => { signOut(auth); setTopPanel(null); }}>تسجيل الخروج</button>
                 </>
               ) : (
@@ -1150,11 +1150,13 @@ export default function App() {
             </div>
           )}
           <nav className="navbar">
-            <a href="#" className="active">الرئيسية</a>
-            <a href="#learning">الكورسات</a>
-            <a href="#resources">الموارد المجانية</a>
-            {!isPage && (
-  <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
+            {isPage ? null : (
+              <>
+                <a href="#" className="active">الرئيسية</a>
+                <a href="#learning">الكورسات</a>
+                <a href="#resources">الموارد المجانية</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
+              </>
             )}
           </nav>
           </>

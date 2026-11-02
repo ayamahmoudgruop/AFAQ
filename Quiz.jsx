@@ -195,6 +195,12 @@ export default function Quiz({ user }) {
       <div className="quiz-card" id="quiz">
         <h2>اكتشف مسارك</h2>
         <p className="quiz-subtitle">إذا كنت تتردد بين عدة مجالات وتشعر بالحيرة حيال نقطة البداية، فهذا الاختبار صُمم ليوجه خطواتك بدقة. أجيب عن الأسئلة التالية بوضوح، لنحدد معاً المسار التقني الأنسب لمهاراتك وتطلعاتك.</p>
+        <div className="quiz-steps">
+          <div className="quiz-step"><span className="quiz-step-num">1</span><span>احصل على مسارك المناسب</span></div>
+          <div className="quiz-step"><span className="quiz-step-num">2</span><span>اكتشف اهتماماتك</span></div>
+          <div className="quiz-step"><span className="quiz-step-num">3</span><span>اعرف مستواك</span></div>
+          <div className="quiz-step"><span className="quiz-step-num">4</span><span>حدد الوقت المتاح</span></div>
+        </div>
         <input type="text" id="userName" placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
 
         {best === null && current === 0 && !name.trim() && (

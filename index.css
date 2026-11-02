@@ -2553,3 +2553,52 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 .climb-block { background: #f7f4fc; }
 .climb-preview { width: 40%; aspect-ratio: 4 / 3; }
 @media (max-width: 480px) { .climb-preview { width: 100%; aspect-ratio: 16 / 9; } }
+
+
+/* المسارات: العنوان على اليمين، والصور في شبكة على الشمال (زي التصميم) */
+.learning .cards { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1fr); align-items: start; }
+.learning .card:first-child { grid-column: 4; grid-row: 1 / span 2; background: transparent !important; border: none !important; box-shadow: none !important; align-self: center; text-align: right; }
+.learning .card:first-child::before { display: none; }
+.learning .card:first-child h3 { font-size: 1.15rem; margin: 0 0 6px; }
+.learning .card:first-child p { font-size: 0.9rem; }
+@media (max-width: 480px) {
+  .learning .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .learning .card:first-child { grid-column: 1 / -1; grid-row: auto; text-align: right; }
+}
+
+/* ===== الاختبار زي التصميم: النص على الشمال، والكارت المتراكب على اليمين ===== */
+.quiz-card::before, .quiz-card::after { display: none !important; }
+.quiz-card { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.quiz-card > h2, .quiz-card > .quiz-subtitle, .quiz-card > input, .quiz-card > .quiz-hint { grid-column: 1; }
+.quiz-card > *:not(h2):not(.quiz-subtitle):not(input):not(.quiz-hint):not(#quiz-box) { grid-column: 1 / -1; }
+#quiz-box {
+  grid-column: 2;
+  grid-row: 1 / span 6;
+  position: relative;
+  background: #ffffff;
+  border: 0.5px solid #a58bdc;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(59, 42, 107, 0.12);
+}
+#quiz-box::before, #quiz-box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #ede7f8;
+  border: 0.5px solid #a58bdc;
+  z-index: -1;
+}
+#quiz-box::before { transform: translate(8px, 8px) rotate(1.5deg); opacity: 0.85; }
+#quiz-box::after { transform: translate(14px, 14px) rotate(2.6deg); opacity: 0.5; }
+@media (max-width: 480px) {
+  .quiz-card { grid-template-columns: minmax(0, 1fr); }
+  #quiz-box { grid-column: 1; grid-row: auto; margin-top: 10px; }
+}
+
+/* خطوات الاختبار (على الشمال) */
+.quiz-card > .quiz-steps { grid-column: 1; }
+.quiz-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.quiz-step { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #3d3556; background: #f7f4fc; border: 0.5px solid #d8d2e3; border-radius: 12px; padding: 8px; }
+.quiz-step-num { width: 24px; height: 24px; border-radius: 50%; background: #3b2a6b; color: #ede7f8; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; flex-shrink: 0; }
