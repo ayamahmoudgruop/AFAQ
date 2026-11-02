@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import Quiz from "./Quiz.jsx";
 import Forum, { UserProfile } from "./Forum.jsx";
 import { PairsPanel, PairsWatcher } from "./Pairs.jsx";
-import { ProjectBox, useApprovedLevels } from "./Projects.jsx";
+import { ProjectBox, useApprovedLevels, ProjectsPage } from "./Projects.jsx";
 import AdminPage, { OwnerCard } from "./Admin.jsx";
 import { CertRequestCard, VerifyPage } from "./Certificates.jsx";
 import { ABOUT_TEXT, tracks, languages, resources, TELEGRAM_LINK, stageTests, projects } from "./data.js";
 import CodeBox from "./CodeBox.jsx";
 import { auth } from "./firebase.js";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { loadUserData, saveUserData, saveLeaderboard } from "./sync.js";
 import { collection, query, where, orderBy, limit, onSnapshot, doc } from "firebase/firestore";
 import { db } from "./firebase.js";
@@ -550,6 +550,30 @@ function Leaderboard({ user }) {
 }
 
 /* هيدر القسم: ألوان الغروب (بتكمل الهيرو) + النقاط + الارتفاع + المستويات */
+/* كروت "قريباً" بتقلب بالتبادل */
+const COMING_ITEMS = [
+  { key: "library", title: "مكتبة أفاق", img: "/coming-library.jpg" },
+  { key: "robot", title: "رفيق أفاق", img: "/coming-robot.jpg" },
+  { key: "podcast", title: "بودكاست أفاق", img: "/coming-podcast.jpg" },
+];
+function ComingRotator() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % COMING_ITEMS.length), 5000);
+    return () => clearInterval(t);
+  }, []);
+  const it = COMING_ITEMS[idx];
+  return (
+    <div className="coming-card" key={it.key}>
+      <div className="coming-img" style={{ backgroundImage: "url(" + it.img + ")" }} />
+      <div className="coming-text">
+        <h3>{it.title}</h3>
+        <span className="coming-tag">قريباً</span>
+      </div>
+    </div>
+  );
+}
+
 function SectionHeader({ title, courses, done, onSelect }) {
   const list = courses || [];
   const total = list.length;
@@ -789,6 +813,15 @@ function PageView({ route, done, onPick, user }) {
       <section className="page">
         {back}
         <VerifyPage code={route.slice(7)} />
+      </section>
+    );
+  }
+
+  if (route === "projects") {
+    return (
+      <section className="page">
+        {back}
+        <ProjectsPage />
       </section>
     );
   }
@@ -1041,6 +1074,8 @@ export default function App() {
     setDone((prev) => (prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]));
   }
   const [route, setRoute] = useState(readRoute);
+  const [searchQ, setSearchQ] = useState("");
+  const [topPanel, setTopPanel] = useState(null);
   useEffect(() => {
     const onHash = () => setRoute(readRoute());
     window.addEventListener("hashchange", onHash);
@@ -1071,6 +1106,49 @@ export default function App() {
             <StudentPanel track={route} courses={tracks[route]} done={done} user={user} />
           </div>
         ) : (
+          <>
+          {!isPage && (
+            <form
+              className="top-tools"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = searchQ.trim();
+                if (!q) return;
+                const hit = Object.keys(TRACK_TITLES).find((k) => TRACK_TITLES[k].includes(q));
+                if (hit) go(hit);
+                else window.location.hash = "#/forum";
+              }}
+            >
+              <input
+                className="top-search"
+                type="search"
+                placeholder="ابحث هنا..."
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+              />
+              <button type="button" className="top-icon" aria-label="الإشعارات" onClick={() => setTopPanel(topPanel === "notif" ? null : "notif")}>🔔</button>
+              <button type="button" className="top-avatar" aria-label="حسابي" onClick={() => setTopPanel(topPanel === "acc" ? null : "acc")}>{user && user.displayName ? user.displayName.trim().charAt(0) : "ح"}</button>
+            </form>
+          )}
+          {!isPage && topPanel === "notif" && (
+            <div className="top-panel">
+              <div className="top-panel-head"><strong>الإشعارات</strong><button type="button" className="side-close" onClick={() => setTopPanel(null)}>✕</button></div>
+              <NotificationsBox user={user} />
+            </div>
+          )}
+          {!isPage && topPanel === "acc" && (
+            <div className="top-panel">
+              <div className="top-panel-head"><strong>حسابي</strong><button type="button" className="side-close" onClick={() => setTopPanel(null)}>✕</button></div>
+              {user ? (
+                <>
+                  <p className="forum-meta">داخلة باسم: {user.displayName || "حسابك"}</p>
+                  <button type="button" className="quiz-btn ghost" onClick={() => { signOut(auth); setTopPanel(null); }}>تسجيل الخروج</button>
+                </>
+              ) : (
+                <button type="button" className="quiz-btn" onClick={() => signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {})}>سجّل الدخول بجوجل</button>
+              )}
+            </div>
+          )}
           <nav className="navbar">
             <a href="#" className="active">الرئيسية</a>
             <a href="#learning">الكورسات</a>
@@ -1079,6 +1157,7 @@ export default function App() {
   <a href="#" onClick={(e) => { e.preventDefault(); setDialog("about"); }}>من نحن</a>
             )}
           </nav>
+          </>
         )}
       </header>
 
@@ -1111,7 +1190,7 @@ export default function App() {
             <p>اكتشف مسارك المناسب<br />لمستقبلك.</p>
           </div>
 
-          <div className="card clickable" id="languages" onClick={() => go("languages")}>
+          <div className="card clickable extra-track" id="languages" onClick={() => go("languages")}>
             <Icon color="green" src="/icon-languages.png" alt="اللغات" fallback="🌎" />
             <h3>اللغات</h3>
             <p>طور لغتك وكن أقرب<br />لفرص أفضل.</p>
@@ -1141,35 +1220,64 @@ export default function App() {
             <p>بداية الرحلة مع البيانات<br />وتحويلها إلى قرارات واضحة.</p>
           </div>
 
-          <div className="card clickable" id="card-ai" onClick={() => go("ai")}>
+          <div className="card clickable extra-track" id="card-ai" onClick={() => go("ai")}>
             <Icon color="purple" src="/icon-ai.png" alt="الذكاء الاصطناعي" fallback="🤖" />
             <h3>الذكاء الاصطناعي</h3>
             <p>تعرّف على الذكاء الاصطناعي<br />واستخدمه في شغلك ودراستك.</p>
           </div>
 
-          <div className="card clickable" id="card-cyber" onClick={() => go("cyber")}>
+          <div className="card clickable extra-track" id="card-cyber" onClick={() => go("cyber")}>
             <Icon color="gray" src="/icon-cyber.png" alt="الأمن السيبراني" fallback="🛡️" />
             <h3>الأمن السيبراني</h3>
             <p>احمِ نفسك وبياناتك<br />وتعلم أساسيات الحماية الرقمية.</p>
           </div>
         </div>
+        <div className="show-all-wrap">
+          <button type="button" className="show-all-btn" onClick={(e) => e.currentTarget.closest("section").classList.toggle("show-all")}>
+            <span className="more-txt">استعرض كل المسارات</span>
+            <span className="less-txt">عرض أقل</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="home-block practical-block">
+        <div className="block-text">
+          <h3>التدريب العملي</h3>
+          <p>جرّب الكود بنفسك</p>
+          <button type="button" className="quiz-btn" onClick={() => go("programming")}>ابدأ الآن</button>
+        </div>
+        <img className="block-img" src="/practical-training.jpg" alt="" />
+      </section>
+
+      <section className="home-block projects-block">
+        <div className="block-text">
+          <h3>المشاريع ومعرض الأعمال</h3>
+          <p>شغل الطلاب المقبول</p>
+          <a href="#/projects" className="quiz-btn">اذهب للأعمال</a>
+        </div>
+        <div className="projects-thumbs">
+          <div className="thumb" style={{ backgroundImage: "url(/project-website.jpg)" }} />
+          <div className="thumb" style={{ backgroundImage: "url(/project-app.jpg)" }} />
+          <div className="thumb" style={{ backgroundImage: "url(/project-data.jpg)" }} />
+        </div>
+      </section>
+
+      <section className="home-block climb-block">
+        <div className="block-text">
+          <h3>رحلة الصعود</h3>
+          <p>كل إنجاز بيقرّبك من القمة، بمسار واضح ومشاريع حقيقية.</p>
+          <button type="button" className="quiz-btn" onClick={() => go("programming")}>ابدأ رحلتك</button>
+        </div>
+        <img className="block-img climb-preview" src="/mountain.jpg" alt="" />
       </section>
 
       <section className="learning" id="resources">
         <h2>مصادر تعليمية</h2>
         <div className="title-line"></div>
         <div className="cards">
-          <div className="card clickable" onClick={() => go("platforms")}>
-            <Icon color="blue" src="/icon-platforms.png" alt="منصات للتدريب العملي للبرمجة" fallback="💻" />
-            <h3>منصات للتدريب العملي للبرمجة</h3>
-          </div>
           <div className="card clickable" onClick={() => go("forum")}>
             <Icon color="pink" src="/icon-community.png" alt="مجتمعات ومنتديات" fallback="💬" />
             <h3>مجتمعات ومنتديات للنقاش وحل المشاكل</h3>
-          </div>
-          <div className="card clickable" onClick={() => go("podcast")}>
-            <Icon color="purple" src="/icon-podcast.png" alt="بودكاست" fallback="🎧" />
-            <h3>بودكاست </h3>
           </div>
         </div>
       </section>
@@ -1178,6 +1286,10 @@ export default function App() {
         <p>{ABOUT_TEXT}</p>
       </Modal>
 
+
+      <section className="home-block coming-block">
+        <ComingRotator />
+      </section>
 
       <footer className="site-footer">
         <p className="footer-title">🚀 آفاق</p>

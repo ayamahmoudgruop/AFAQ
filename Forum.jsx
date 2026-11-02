@@ -20,6 +20,8 @@ import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { db, auth, googleProvider } from "./firebase.js";
 import CodeBox from "./CodeBox.jsx";
 import { PairRequestButton } from "./Pairs.jsx";
+import { Portfolio } from "./Projects.jsx";
+import { projects as PROJECTS } from "./data.js";
 
 const MAX = { title: 120, body: 1500, code: 3000 };
 const COOLDOWN_MS = 30000;
@@ -592,6 +594,7 @@ export function UserProfile({ uid }) {
       <h2>{name}</h2>
       <p className="forum-meta">عدد الأسئلة: {items.length}</p>
       <PairRequestButton targetUid={uid} />
+      <Portfolio uid={uid} projectsMap={PROJECTS} />
       {items.length === 0 && <p className="tree-empty">لا توجد أسئلة منشورة بعد.</p>}
       {items.map((q) => (
         <div key={q.id} className="forum-item">

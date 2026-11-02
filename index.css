@@ -2430,3 +2430,126 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 .side-close { background: #f0ecfa; border: 1px solid #a58bdc; color: #3b2a6b; border-radius: 50%; width: 34px; height: 34px; font-size: 1rem; cursor: pointer; font-family: inherit; }
 .side-close:active { transform: scale(0.95); }
 .side-card { touch-action: pan-y; }
+
+/* الروابط في سطر واحد أفقي (الرئيسية، الكورسات، الموارد المجانية، من نحن) */
+.header { flex-wrap: wrap; gap: 8px; }
+.header .navbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow-x: auto;
+  white-space: nowrap;
+  width: 100%;
+}
+.header .navbar a { white-space: nowrap; font-size: 0.92rem; flex-shrink: 0; }
+
+/* الصفحة الرئيسية: 4 مسارات ظاهرين، والباقي بزرار */
+.learning .extra-track { display: none; }
+.learning.show-all .extra-track { display: revert; }
+.show-all-wrap { display: flex; justify-content: center; margin-top: 14px; }
+.show-all-btn { background: transparent; border: 1px solid #a58bdc; color: #3b2a6b; border-radius: 999px; padding: 8px 18px; font-family: inherit; font-size: 0.9rem; cursor: pointer; }
+.show-all-btn .less-txt { display: none; }
+.learning.show-all .show-all-btn .more-txt { display: none; }
+.learning.show-all .show-all-btn .less-txt { display: inline; }
+
+/* شريط رحلة الصعود في الصفحة الرئيسية */
+.climb-strip { position: relative; margin: 18px auto; max-width: 960px; border-radius: 18px; overflow: hidden; min-height: 180px; display: flex; align-items: flex-end; }
+.climb-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.climb-strip::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(32, 21, 57, 0.15) 0%, rgba(32, 21, 57, 0.8) 100%); }
+.climb-text { position: relative; padding: 18px; color: #ede7f8; display: flex; flex-direction: column; gap: 8px; text-align: right; }
+.climb-text h3 { margin: 0; color: #ffffff; }
+.climb-text p { margin: 0; font-size: 0.92rem; }
+.climb-text .quiz-btn { align-self: flex-start; }
+
+/* ===== المسارات بصور (زي التصميم): 3 في الصف، صورة فوق والاسم تحت ===== */
+.learning .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.learning .card { padding: 0 !important; overflow: hidden; background: #ffffff; border: 0.5px solid #d8d2e3; border-radius: 14px; text-align: right; }
+.learning .card > *:not(h3):not(p) { display: none !important; }
+.learning .card::before {
+  content: "";
+  display: block;
+  height: 96px;
+  background: #ede7f8 center / cover no-repeat;
+}
+.learning .card h3 { margin: 8px 10px 2px; font-size: 0.85rem; color: #2b1f4f; }
+.learning .card p { margin: 0 10px 10px; font-size: 0.7rem; color: #6b6380; line-height: 1.4; }
+#card-programming::before { background-image: url("/track-programming.jpg"); }
+#card-design::before { background-image: url("/track-design.jpg"); }
+#card-ai::before { background-image: url("/track-ai.jpg"); }
+#languages::before { background-image: url("/track-languages.jpg"); }
+#card-data::before { background-image: url("/track-data.jpg"); }
+#card-marketing::before { background-image: url("/track-marketing.jpg"); }
+#card-cyber::before { background-image: url("/track-cyber.jpg"); }
+@media (max-width: 480px) {
+  .learning .cards { gap: 8px; }
+  .learning .card::before { height: 72px; }
+  .learning .card h3 { font-size: 0.75rem; }
+  .learning .card p { display: none; }
+}
+
+/* ===== اختبار "اكتشف مسارك": كروت متراكبة خلف الكارت (زي التصميم) ===== */
+.quiz-card { position: relative; }
+.quiz-card::before,
+.quiz-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #ede7f8;
+  border: 0.5px solid #a58bdc;
+  z-index: -1;
+  pointer-events: none;
+}
+.quiz-card::before { transform: translate(10px, 10px) rotate(1.2deg); opacity: 0.8; }
+.quiz-card::after { transform: translate(18px, 18px) rotate(2.2deg); opacity: 0.55; }
+
+
+/* ===== أقسام الصفحة الرئيسية الجديدة (بالألوان من التصميم) ===== */
+.home-block { display: flex; gap: 14px; align-items: center; margin: 16px auto; max-width: 960px; padding: 16px; border-radius: 18px; }
+.block-text { flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: right; }
+.block-text h3 { margin: 0; font-size: 1.1rem; color: #2b1f4f; }
+.block-text p { margin: 0; font-size: 0.9rem; color: #6b6380; }
+.block-text .quiz-btn { align-self: flex-start; text-decoration: none; }
+.block-img { width: 46%; border-radius: 14px; object-fit: cover; aspect-ratio: 16 / 10; }
+
+.practical-block { background: #1f163f; }
+.practical-block .block-text h3 { color: #ede7f8; }
+.practical-block .block-text p { color: #c4b5f5; }
+.practical-block .quiz-btn { background: #ede7f8; color: #2b1f4f; }
+
+.projects-block { background: #f7f4fc; }
+.projects-thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 52%; }
+.projects-thumbs .thumb { aspect-ratio: 4 / 3; border-radius: 10px; background: #ede7f8 center / cover no-repeat; border: 0.5px solid #d8d2e3; }
+
+.coming-block { background: #f7f4fc; display: block; }
+.coming-card { display: flex; gap: 12px; align-items: center; background: #ffffff; border: 0.5px solid #d8d2e3; border-radius: 14px; overflow: hidden; }
+.coming-img { width: 42%; min-height: 110px; background: #ede7f8 center / cover no-repeat; }
+.coming-text { padding: 12px; display: flex; flex-direction: column; gap: 6px; text-align: right; }
+.coming-text h3 { margin: 0; font-size: 1rem; color: #2b1f4f; }
+.coming-tag { align-self: flex-start; background: #ede7f8; color: #3b2a6b; border-radius: 999px; padding: 3px 10px; font-size: 0.75rem; }
+
+.works-page { display: flex; flex-direction: column; gap: 10px; }
+.works-page h2 { margin: 0 0 6px; color: #2b1f4f; }
+
+@media (max-width: 480px) {
+  .home-block { flex-direction: column; }
+  .block-img { width: 100%; }
+  .projects-thumbs { width: 100%; }
+}
+
+
+/* شريط الأدوات فوق الصفحة الرئيسية: بحث + إشعارات + حساب */
+.top-tools { display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 6px; }
+.top-search { flex: 1; min-width: 0; height: 36px; border-radius: 999px; border: 0.5px solid #a58bdc; background: #ffffff; padding: 0 14px; font-family: inherit; font-size: 0.85rem; color: #2b1f4f; }
+.top-icon { width: 36px; height: 36px; border-radius: 50%; border: 0.5px solid #a58bdc; background: #ffffff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 0.95rem; flex-shrink: 0; }
+.top-avatar { width: 36px; height: 36px; border-radius: 50%; background: #3b2a6b; color: #ede7f8; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 500; flex-shrink: 0; }
+
+.top-panel { background: #ffffff; border: 1px solid #a58bdc; border-radius: 16px; padding: 12px; margin-bottom: 10px; color: #2b1f4f; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 26px rgba(32, 21, 57, 0.18); }
+.top-panel-head { display: flex; justify-content: space-between; align-items: center; }
+
+/* رحلة الصعود: نص + زرار + معاينة صغيرة للجبل */
+.climb-block { background: #f7f4fc; }
+.climb-preview { width: 40%; aspect-ratio: 4 / 3; }
+@media (max-width: 480px) { .climb-preview { width: 100%; aspect-ratio: 16 / 9; } }

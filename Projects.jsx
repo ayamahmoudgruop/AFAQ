@@ -126,6 +126,20 @@ export function ProjectBox({ user, track, trackLabel, level, project, approved, 
         <button type="button" className="forum-link-btn" onClick={onClose}>إغلاق</button>
       </div>
       <p>{project.title}</p>
+      {project.client && (
+        <div className="client-brief">
+          <p><strong>العميل:</strong> {project.client}</p>
+          {project.problem && <p><strong>المشكلة:</strong> {project.problem}</p>}
+          {project.deliverables && project.deliverables.length > 0 && (
+            <div>
+              <p><strong>المطلوب:</strong></p>
+              <ul className="brief-list">
+                {project.deliverables.map((d) => (<li key={d}>{d}</li>))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
       <p className="forum-meta">{project.desc}</p>
       {isApproved ? (
         <p className="forum-thanks">✓ المشروع اتقبل، والمستوى الجاي اتفتح.</p>
@@ -140,6 +154,73 @@ export function ProjectBox({ user, track, trackLabel, level, project, approved, 
           <button type="submit" className="quiz-btn" disabled={busy || !link.trim()}>{busy ? "جاري التسليم..." : "سلّم المشروع"}</button>
         </form>
       )}
+    </div>
+  );
+}
+
+
+const TRACK_LABELS = {
+  programming: "البرمجة",
+  design: "التصميم",
+  marketing: "التسويق",
+  data: "تحليل البيانات",
+  ai: "الذكاء الاصطناعي",
+  cyber: "الأمن السيبراني",
+  languages: "اللغات",
+};
+
+// البورتفوليو: المشاريع المقبولة بس تظهر في صفحة الطالب
+export function Portfolio({ uid, projectsMap }) {
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    if (!uid) return;
+    return onSnapshot(
+      query(collection(db, "submissions"), where("uid", "==", uid), where("status", "==", "approved")),
+      (snap) => setItems(snap.docs.map((d) => d.data())),
+      () => setItems([])
+    );
+  }, [uid]);
+
+  if (items.length === 0) return null;
+  return (
+    <div className="portfolio">
+      <h3>المشاريع المقبولة</h3>
+      {items.map((it) => {
+        const pr = (projectsMap && projectsMap[it.track] && projectsMap[it.track][it.level]) || {};
+        return (
+          <div key={it.track + "_" + it.level} className="portfolio-item">
+            <strong>{pr.title || "مشروع " + it.level}</strong>
+            <span className="forum-meta">{TRACK_LABELS[it.track] || it.track} · {it.level}</span>
+            {it.link && <a href={it.link} target="_blank" rel="noreferrer" className="admin-link">افتح المشروع ↗</a>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// معرض الأعمال: شغل الطلاب المقبول (من غير بيانات حساسة)
+export function ProjectsPage() {
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    return onSnapshot(
+      query(collection(db, "submissions"), where("status", "==", "approved")),
+      (snap) => setItems(snap.docs.map((d) => d.data())),
+      () => setItems([])
+    );
+  }, []);
+
+  return (
+    <div className="works-page">
+      <h2>معرض الأعمال</h2>
+      {items.length === 0 && <p className="forum-meta">لسه مفيش أعمال مقبولة. أول مشروع يتقبل هيظهر هنا.</p>}
+      {items.map((it) => (
+        <div key={it.uid + "_" + it.track + "_" + it.level} className="portfolio-item">
+          <strong>{it.name || "طالب"}</strong>
+          <span className="forum-meta">{TRACK_LABELS[it.track] || it.track} · {it.level}</span>
+          {it.link && <a href={it.link} target="_blank" rel="noreferrer" className="admin-link">افتح المشروع ↗</a>}
+        </div>
+      ))}
     </div>
   );
 }
