@@ -2664,3 +2664,42 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
 @media (max-width: 480px) {
   .coming-img { min-height: 150px; }
 }
+
+/* ضبط الاختبار أقرب للتصميم: أيقونات بدل الأرقام، وكروت متراكبة أوضح */
+.quiz-step-num { font-size: 0 !important; background: #ffffff !important; border: 1px solid #a58bdc !important; }
+.quiz-step-num::after { font-size: 15px; line-height: 1; }
+.quiz-step:nth-child(1) .quiz-step-num::after { content: "🧭"; }
+.quiz-step:nth-child(2) .quiz-step-num::after { content: "💡"; }
+.quiz-step:nth-child(3) .quiz-step-num::after { content: "📊"; }
+.quiz-step:nth-child(4) .quiz-step-num::after { content: "⏱"; }
+#quiz-box::before { transform: translate(14px, 14px) rotate(2.5deg) !important; opacity: 1 !important; background: #f1ebfa !important; }
+#quiz-box::after { transform: translate(26px, 26px) rotate(4.5deg) !important; opacity: 0.9 !important; background: #e7defa !important; }
+
+/* استعرض المزيد: كل المسارات تفضل في الشبكة (3 في الصف)، والعنوان ياخد الجنب كله */
+@media (min-width: 761px) {
+  .learning .card:first-child { grid-row: 1 / -1 !important; grid-column: 1 !important; }
+  .learning .cards > .card:not(:first-child) { grid-column: auto; }
+}
+
+/* الكمبيوتر: الكلام على جنب الشاشة، والبنت تفضل على اليمين من غير ما الكلام يغطي راسها */
+@media (min-width: 901px) {
+  .hero {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding-left: 6%;
+    padding-right: 6%;
+    background-position: 100% bottom !important;
+  }
+  .hero-content {
+    max-width: 44%;
+    margin-inline-start: 0;
+    margin-inline-end: auto;
+  }
+}
+
+/* رحلة الصعود على الكمبيوتر: الصورة أكبر */
+@media (min-width: 901px) {
+  .climb-block { max-width: 1100px; }
+  .climb-preview { width: 52%; aspect-ratio: 16 / 10; }
+}
