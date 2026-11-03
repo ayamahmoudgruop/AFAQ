@@ -2703,3 +2703,83 @@ textarea.forum-input { min-height: 90px; resize: vertical; }
   .climb-block { max-width: 1100px; }
   .climb-preview { width: 52%; aspect-ratio: 16 / 10; }
 }
+
+/* الاختبار: عمود واحد افتراضياً (عشان ما ينضغطش النص)، وعمودين بس لو الشاشة واسعة فعلاً */
+.quiz-card { display: flex !important; flex-direction: column; gap: 10px; grid-template-columns: none !important; }
+.quiz-card > * { grid-column: auto !important; grid-row: auto !important; }
+#quiz-box { margin-top: 12px; }
+.quiz-steps { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.quiz-step-num::after { content: none; }
+.quiz-step-num { font-size: 0.8rem !important; }
+@media (min-width: 980px) {
+  .quiz-card { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 14px; align-items: start; }
+  .quiz-card > h2, .quiz-card > .quiz-subtitle, .quiz-card > .quiz-steps, .quiz-card > input, .quiz-card > .quiz-hint { grid-column: 2 !important; }
+  .quiz-card > h2 { grid-row: 1 !important; }
+  .quiz-card > .quiz-subtitle { grid-row: 2 !important; }
+  .quiz-card > .quiz-steps { grid-row: 3 !important; }
+  .quiz-card > input { grid-row: 4 !important; }
+  .quiz-card > .quiz-hint { grid-row: 5 !important; }
+  #quiz-box { grid-column: 1 !important; grid-row: 1 / span 6 !important; margin-top: 0; }
+  .quiz-steps { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .quiz-step-num::after { content: none; }
+}
+
+/* ===== تصليح نهائي للاختبار على الموبايل: عمود واحد، ومفيش تداخل بين النص والكارت ===== */
+@media (max-width: 760px) {
+  .quiz-card { display: flex !important; flex-direction: column !important; gap: 12px !important; }
+  .quiz-card > * { grid-column: auto !important; grid-row: auto !important; width: 100% !important; }
+  .quiz-card #quiz-box, #quiz-box { position: relative !important; grid-column: auto !important; grid-row: auto !important; margin-top: 14px !important; }
+  .quiz-card > input { max-width: 100%; }
+  .quiz-steps { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .quiz-step { flex-direction: row; font-size: 0.78rem; }
+}
+
+/* ===== الاختيارات: شبكة من عمودين على الموبايل، كروت صغيرة زي التصميم ===== */
+.quiz-options { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; }
+.quiz-options > label { font-size: 0.72rem !important; line-height: 1.45 !important; padding: 8px 8px !important; min-height: 64px; display: flex; align-items: center; gap: 6px; }
+@media (max-width: 760px) {
+  .quiz-card { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) !important; }
+  .quiz-card > h2, .quiz-card > .quiz-subtitle, .quiz-card > input, .quiz-card > .quiz-hint, .quiz-card > .quiz-steps { grid-column: 1 !important; }
+  .quiz-card #quiz-box, #quiz-box { grid-column: 2 !important; grid-row: 1 / span 6 !important; margin-top: 0 !important; }
+  .quiz-card > h2 { font-size: 1rem !important; }
+  .quiz-card > .quiz-subtitle { font-size: 0.7rem !important; }
+  .quiz-steps { grid-template-columns: minmax(0, 1fr) !important; }
+  .quiz-step { font-size: 0.66rem !important; padding: 4px !important; }
+  .quiz-step-num { width: 24px !important; height: 24px !important; }
+}
+
+
+/* ===== الاختبار زي التصميم (موبايل + كمبيوتر) ===== */
+/* الكروت المتراكبة بصورة الجبل */
+#quiz-box::before, #quiz-box::after {
+  background-image: url("/mountain.jpg");
+  background-size: cover;
+  background-position: center;
+  border-color: #c4b5f5;
+}
+#quiz-box::before { opacity: 0.9 !important; }
+#quiz-box::after { opacity: 0.6 !important; }
+/* زرار البدء */
+.quiz-start-btn {
+  background: #3b2a6b; color: #ede7f8; border: none; border-radius: 999px;
+  padding: 10px 18px; font-family: inherit; font-size: 0.9rem; cursor: pointer;
+  align-self: flex-start;
+}
+/* الخطوات: أيقونات (من غير أرقام) على الكمبيوتر والموبايل */
+.quiz-step-num { font-size: 0 !important; }
+.quiz-step-num::after { font-size: 15px !important; }
+/* الكمبيوتر: الخطوات أكبر وبأيقونات واضحة */
+@media (min-width: 761px) {
+  .quiz-step-num { width: 44px !important; height: 44px !important; }
+  .quiz-step-num::after { font-size: 20px !important; }
+  .quiz-step { font-size: 0.85rem !important; }
+}
+
+/* الكمبيوتر: الكلام بعيد عن البنت، والبنت تفضل واضحة على اليمين */
+@media (min-width: 901px) {
+  .hero { padding-left: 5%; padding-right: 5%; }
+  .hero-content { max-width: 36%; margin-inline-start: 4%; margin-inline-end: auto; }
+  .hero-content h1 { font-size: clamp(1.8rem, 2.6vw, 2.6rem); line-height: 1.25; }
+  .hero-content p { font-size: 0.95rem; }
+  .hero { background-position: 92% bottom !important; background-size: cover !important; }
+}
